@@ -1,17 +1,18 @@
 import React from 'react';
-import ReactDOM from 'react-dom/client';
-import './index.css';
-import App from './App';
-import reportWebVitals from './reportWebVitals';
+import LoginPage from './components/LoginPage/Login';
+import ReactDOM from 'react-dom';
+ // Nếu LoginPage.js nằm trong cùng thư mục với file hiện tại
+ import App from './components/RoutePage';
+import { BrowserRouter } from 'react-router-dom';
+import { AppProvider } from './services/AppContext';
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
+
+ReactDOM.render(
+  <BrowserRouter>
+  <AppProvider>
+      <App />
+  </AppProvider>
+  </BrowserRouter>,
+  document.getElementById('root')
 );
 
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-reportWebVitals();

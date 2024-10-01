@@ -1,0 +1,49 @@
+.sidebar {
+    width: 200px; /* Kích thước sidebar */
+    background-color: #1d79d5; /* Màu nền */
+    padding: 20px; /* Khoảng cách bên trong */
+    position: fixed; /* Giữ sidebar cố định */
+    height: 100%; /* Độ cao 100% */
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1); /* Đổ bóng cho sidebar */
+}
+
+.sidebar ul {
+    list-style-type: none; /* Bỏ dấu chấm cho danh sách */
+    padding: 0; /* Bỏ khoảng cách mặc định */
+}
+
+.sidebar li {
+    margin: 15px 0;
+    padding: 15px;
+     /* Khoảng cách giữa các mục menu */
+     font-family: Arial, Helvetica, sans-serif;
+     color: aliceblue;
+}
+.sidebar ul li.active{
+    background-color: #007bff; /* Màu nền khi hover */
+    color: white; /* Màu chữ khi hover */
+}
+
+.sidebar li:hover {
+    background-color: #007bff; /* Màu nền khi hover */
+    color: white; /* Màu chữ khi hover */
+}
+
+.sidebar li:active{
+    background-color: #007bff; /* Màu nền khi hover */
+
+}
+
+.content {
+    margin-left: 220px; /* Để tránh bị che bởi sidebar, cần thêm một chút khoảng cách */
+    padding: 20px; /* Khoảng cách bên trong cho nội dung */
+    width: calc(100% - 220px); /* Đảm bảo chiều rộng nội dung không bị che */
+}
+
+.container {
+    display: flex; /* Bố trí flex cho nội dung */
+}
+.titleul{
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 20px;
+}

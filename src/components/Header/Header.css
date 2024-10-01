@@ -1,0 +1,43 @@
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: #f0f0f0; /* Màu nền cho header */
+    border-bottom: 1px solid #ddd; 
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    /* Đường viền dưới */
+    /* position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000; /* Đảm bảo header ở trên cùng các phần tử khác */
+    /* background-color: white; /* Đặt màu nền nếu cần */
+    /* box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Tạo bóng đổ để phân biệt header */
+    /* margin-bottom:60px; */ 
+
+}
+
+.header-title {
+    font-size: 24px; /* Kích thước tiêu đề */
+    margin: 0; /* Xóa khoảng cách mặc định */
+    font-family: Georgia, 'Times New Roman', Times, serif
+}
+
+.user-info {
+    display: flex;
+    align-items: center; /* Canh giữa avatar và tên */
+}
+
+.user-avatar {
+    width: 40px; /* Kích thước avatar */
+    height: 40px; /* Kích thước avatar */
+    border-radius: 50%; /* Làm tròn avatar */
+    margin-right: 10px; /* Khoảng cách giữa avatar và tên */
+}
+
+.user-name {
+    font-size: 18px; /* Kích thước chữ tên người dùng */
+}

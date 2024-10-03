@@ -1,0 +1,21 @@
+
+.container{
+    padding: 20px;
+}
+.title{
+    text-align: center;
+    font-size: 25px;
+}
+
+.contaiButton{
+    display: flex;
+    justify-content: space-between;
+
+}
+button{
+    width: 40%;
+}
+.button_no{
+    background-color: rgb(218, 73, 73);
+
+}

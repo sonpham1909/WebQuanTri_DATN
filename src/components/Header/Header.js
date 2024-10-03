@@ -2,13 +2,15 @@ import React, { useContext } from 'react';
  // Nhập AppContext
 import './Header.css'; // Nhập CSS nếu cần
 import { AppContext } from '../../services/AppContext';
+import { Image } from 'antd';
 
 const Header = () => {
   const { state } = useContext(AppContext); // Lấy thông tin người dùng từ Context
 
   return (
     <header className="header">
-      <h1 className="header-title">StyleLife</h1>
+      {/* <h1 className="header-title">StyleLife</h1> */}
+      <img src="logoShopHorizal.png" alt="Logo" style={{ width: 100, height: 70 }} />
       <div className="user-info">
         {state.user && (
           <>

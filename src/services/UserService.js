@@ -38,3 +38,29 @@ export const deleteUser = async (userId) => {
         throw error;
     }
 };
+export const addUser = async (userData) => {
+    try {
+        const response = await axiosInstance.post(`/add_user`, userData);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+export const updateUser = async (userId, userData) => {
+    try {
+        const response = await axiosInstance.put(`/${userId}/update_user`, userData); // Gửi yêu cầu cập nhật
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+export const searchUsers = async (searchTerm) => {
+    try {
+        const response = await axiosInstance.get('/search', {
+            params: { keyword: searchTerm }, // Thay thế 'name' bằng trường bạn muốn tìm kiếm
+        });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};

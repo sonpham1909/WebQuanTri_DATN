@@ -3,8 +3,22 @@ import axios from 'axios';
 const API_URL = 'http://localhost:3000/v1/categorys';
 
 // Khởi tạo instance axios
+const getToken = () => {
+    return localStorage.getItem('token'); // Hoặc sử dụng sessionStorage nếu cần
+};
 const axiosInstance = axios.create({
     baseURL: API_URL,
+    headers: {
+        'Authorization': `Bearer ${getToken()}` // Thêm token vào header
+    }
+});
+
+axiosInstance.interceptors.request.use((config) => {
+    const token = getToken(); // Lấy token mới nhất
+    if (token) {
+        config.headers['Authorization'] = `Bearer ${token}`; // Cập nhật header với token
+    }
+    return config;
 });
 
 // Lấy danh sách danh mục

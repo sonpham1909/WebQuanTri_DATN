@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { addCategory, deleteCategory, getAllCategories, searchCategories, updateCategory } from '../../services/Categoryservices';
-import { Button, Table, Modal, message, Form, Input } from 'antd';
+import { Button, Table, Modal, message, Form, Input, Upload } from 'antd';
 import LoadingCo from '../loading/loading';
-import { SearchOutlined } from '@ant-design/icons';
-import { debounce } from '@mui/material';
+import { SearchOutlined, UploadOutlined } from '@ant-design/icons';
+import { debounce } from 'lodash';
+import './Category.css';  
 
 const CategoryManager = () => {
     const [categories, setCategories] = useState([]);
@@ -15,34 +16,100 @@ const CategoryManager = () => {
     const [isModalVisibleAdd, setIsModalVisibleAdd] = useState(false);
     const [form] = Form.useForm();
     const [searchText, setSearchText] = useState('');
-    const [currentPage, setCurrentPage] = useState(1);
-    const pageSize = 5;
 
-    // Fetch categories from API
     const fetchCategories = async () => {
         setLoading(true);
         try {
-            const data = await getAllCategories();
-            setCategories(data);
+            const result = await getAllCategories();
+            setCategories(result);
         } catch (error) {
-            console.error('Failed to fetch categories:', error);
-            message.error('Lấy danh mục thất bại, vui lòng kiểm tra lại!');
+            console.error("Error fetching categories:", error);
         } finally {
             setLoading(false);
         }
     };
 
-    // Search categories
-    const fetchCategoriesSearch = async (searchText) => {
-        setLoading(true);
+    const handleSearch = useCallback(
+        debounce(async (searchTerm) => {
+            if (searchTerm) {
+                const result = await searchCategories(searchTerm);
+                setCategories(result);
+            } else {
+                fetchCategories();
+            }
+        }, 300),
+        []
+    );
+
+    const onSearchChange = (e) => {
+        const value = e.target.value;
+        setSearchText(value);
+        handleSearch(value);
+    };
+
+    const showModalAdd = () => {
+        setIsModalVisibleAdd(true);
+        form.resetFields();
+    };
+
+    const showModalUpdate = (category) => {
+        setSelectedCategory(category);
+        form.setFieldsValue({
+            namecategory: category.namecategory,
+            description: category.description,
+            imgcategory: category.imgcategory,
+        });
+        setIsModalVisible(true);
+    };
+
+    const handleAddCategory = async (values) => {
         try {
-            const data = await searchCategories(searchText);
-            setCategories(data);
+            if (!values || !values.namecategory || !values.description || !values.imgcategory?.file) {
+                throw new Error("Thông tin không đầy đủ");
+            }
+
+            const imgFile = values.imgcategory.file;
+            const formData = new FormData();
+            formData.append('namecategory', values.namecategory);
+            formData.append('description', values.description);
+            formData.append('imgcategory', imgFile);
+
+            await addCategory(formData);
+            message.success("Thêm danh mục thành công!");
+            setIsModalVisibleAdd(false);
+            fetchCategories();
         } catch (error) {
-            console.error('Failed to fetch search categories:', error);
-            message.error('Tìm kiếm danh mục thất bại, vui lòng kiểm tra lại!');
-        } finally {
-            setLoading(false);
+            console.error("Error while adding category:", error);
+            message.error("Có lỗi xảy ra khi thêm danh mục: " + error.message);
+        }
+    };
+
+    const handleUpdateCategory = async (values) => {
+        try {
+            const formData = new FormData();
+            formData.append('namecategory', values.namecategory);
+            formData.append('description', values.description);
+            if (values.imgcategory?.file) {
+                formData.append('imgcategory', values.imgcategory.file);
+            }
+
+            await updateCategory(selectedCategory._id, formData);
+            message.success("Cập nhật danh mục thành công!");
+            setIsModalVisible(false);
+            fetchCategories();
+        } catch (error) {
+            message.error("Có lỗi xảy ra khi cập nhật danh mục");
+        }
+    };
+
+    const handleDelete = async (id) => {
+        try {
+            await deleteCategory(id);
+            message.success("Xóa danh mục thành công!");
+            setIsModalVisibleDel(false);
+            fetchCategories();
+        } catch (error) {
+            message.error("Có lỗi xảy ra khi xóa danh mục");
         }
     };
 
@@ -50,230 +117,113 @@ const CategoryManager = () => {
         fetchCategories();
     }, []);
 
-    const debouncedFetchCategoriesSearch = useCallback(debounce(fetchCategoriesSearch, 1000), []);
-
-    const handleSearch = (e) => {
-        const value = e.target.value.toLowerCase();
-        setSearchText(value);
-        debouncedFetchCategoriesSearch(value);
-    };
-
-    const handleRowClick = (record) => {
-        setSelectedCategory(record);
-        form.setFieldsValue({
-            namecategory: record.namecategory, // Sửa lại tên trường
-            description: record.description,
-        });
-        setIsModalVisible(true);
-    };
-
-    const handleModalClose = () => {
-        setSelectedCategory(null);
-        setIsModalVisible(false);
-        form.resetFields(); // Reset fields when closing modal
-    };
-
-    const handleDelete = async (categoryId) => {
-        try {
-            await deleteCategory(categoryId);
-            message.success('Xóa danh mục thành công');
-            fetchCategories(); // Update categories list
-            setId('');
-            setIsModalVisibleDel(false);
-        } catch (error) {
-            console.error('Failed to delete category:', error);
-            message.error('Xóa danh mục thất bại, vui lòng kiểm tra lại!');
-        }
-    };
-
-    const confirmDelete = () => {
-        handleDelete(id);
-    };
-
-    const handleSubmit = async (values) => {
-        try {
-            const categoryAdd = {
-                namecategory: values.namecategory,
-                description: values.description,
-            };
-            await addCategory(categoryAdd);
-            message.success('Thêm danh mục mới thành công');
-            setIsModalVisibleAdd(false);
-            fetchCategories(); // Update categories list
-            form.resetFields();
-        } catch (error) {
-            console.error("Failed to add category:", error);
-            message.error('Thêm danh mục thất bại, vui lòng kiểm tra lại!');
-        }
-    };
-
-    const handleUpdate = async (values) => {
-        try {
-            const categoryUpdate = {
-                namecategory: values.namecategory,
-                description: values.description,
-            };
-            await updateCategory(selectedCategory._id, categoryUpdate);
-            message.success('Cập nhật danh mục thành công');
-            setIsModalVisible(false);
-            fetchCategories(); // Update categories list
-            setSelectedCategory(null);
-            form.resetFields();
-        } catch (error) {
-            console.error('Failed to update category:', error);
-            message.error('Cập nhật danh mục thất bại, vui lòng kiểm tra lại!');
-        }
-    };
-
-    if (loading) {
-        return <LoadingCo />;
-    }
-
-    const columns = [
-        {
-            title: 'STT',
-            dataIndex: 'stt',
-            key: 'stt',
-            render: (text, record, index) => (currentPage - 1) * pageSize + index + 1,
-        },
-        {
-            title: 'Tên danh mục',
-            dataIndex: 'namecategory', // Sửa lại tên trường
-            key: 'namecategory',
-        },
-        {
-            title: 'Mô tả',
-            dataIndex: 'description',
-            key: 'description',
-        },
-        {
-            title: 'Actions',
-            key: 'actions',
-            render: (text, record) => (
-                <div>
-                    <Button type="primary" onClick={() => handleRowClick(record)} style={{ marginRight: '10px' }}>
-                        Chi tiết
-                    </Button>
-                    <Button type="danger" onClick={() => {
-                        setIsModalVisibleDel(true);
-                        setId(record._id);
-                    }}>
-                        Xóa
-                    </Button>
-                </div>
-            ),
-        },
-    ];
-
     return (
         <div className="container">
+            {/* Hàng tìm kiếm */}
             <Input
-                placeholder="Tìm kiếm danh mục..."
+                placeholder="Tìm kiếm danh mục"
                 value={searchText}
-                onChange={handleSearch}
+                onChange={onSearchChange}
                 prefix={<SearchOutlined />}
-                style={{ marginBottom: 16, width: 300 }}
+                className="inputSearch" // class CSS cho ô tìm kiếm
             />
+            
+            {/* Hàng tiêu đề và tổng danh mục */}
             <div className="headerPage">
-                <h3 className="titlepage">Quản lý danh mục</h3>
-                <p>Tổng: {categories.length} danh mục</p>
-                <Button className="buttonAdd" onClick={() => setIsModalVisibleAdd(true)}>Thêm danh mục mới</Button>
+                <h2 className="titlepage">Quản lý danh mục</h2>
+                <div className="headerActions">
+                    <span className="totalCategories">Tổng danh mục: {categories.length}</span>
+                    <Button className="buttonAdd" type="primary" onClick={showModalAdd}>Thêm danh mục</Button>
+                </div>
             </div>
-            <Table
-                className="table"
-                dataSource={categories}
-                columns={columns}
-                rowKey="_id"
-                pagination={{
-                    pageSize,
-                    current: currentPage,
-                    onChange: (page) => setCurrentPage(page),
-                }}
-            />
-
-            {/* Modal for Category Details */}
+            
+            {loading ? (
+                <LoadingCo />
+            ) : (
+                <Table dataSource={categories} rowKey="_id">
+                    <Table.Column title="Tên danh mục" dataIndex="namecategory" />
+                    <Table.Column title="Mô tả" dataIndex="description" />
+                    <Table.Column
+                        title="Hình ảnh"
+                        dataIndex="imgcategory"
+                        render={(text) => <img src={text} alt="Category" style={{ width: '50px' }} />}
+                    />
+                    <Table.Column
+                        title="Thao tác"
+                        render={(text, record) => (
+                            <>
+                                <Button onClick={() => showModalUpdate(record)}>Cập nhật</Button>
+                                <Button danger onClick={() => { setId(record._id); setIsModalVisibleDel(true); }}>Xóa</Button>
+                            </>
+                        )}
+                    />
+                </Table>
+            )}
+            
+            {/* Modal Thêm danh mục */}
             <Modal
-                title="Chi tiết danh mục"
-                visible={isModalVisible}
-                onCancel={handleModalClose}
-                footer={null}
-            >
-                {selectedCategory && (
-                    <Form
-                        form={form}
-                        layout="vertical"
-                        onFinish={handleUpdate}
-                    >
-                        <Form.Item
-                            label="Tên danh mục"
-                            name="namecategory"
-                            rules={[{ required: true, message: 'Vui lòng nhập tên danh mục!' }]}
-                        >
-                            <Input />
-                        </Form.Item>
-
-                        <Form.Item
-                            label="Mô tả"
-                            name="description"
-                        >
-                            <Input />
-                        </Form.Item>
-
-                        <Button type="primary" htmlType="submit">
-                            Cập nhật
-                        </Button>
-                    </Form>
-                )}
-            </Modal>
-
-            {/* Modal for Delete Confirmation */}
-            <Modal
-                title="Xóa danh mục"
-                visible={isModalVisibleDel}
-                onCancel={() => setIsModalVisibleDel(false)}
-                footer={null}
-            >
-                <p>Bạn có chắc chắn muốn xóa danh mục này?</p>
-                <Button type="primary" danger onClick={confirmDelete}>
-                    Xóa
-                </Button>
-                <Button onClick={() => setIsModalVisibleDel(false)}>
-                    Hủy
-                </Button>
-            </Modal>
-
-            {/* Modal for Adding New Category */}
-            <Modal
-                title="Thêm danh mục mới"
+                title="Thêm danh mục"
                 visible={isModalVisibleAdd}
                 onCancel={() => setIsModalVisibleAdd(false)}
                 footer={null}
             >
-                <Form
-                    form={form}
-                    layout="vertical"
-                    onFinish={handleSubmit}
-                >
-                    <Form.Item
-                        label="Tên danh mục"
-                        name="namecategory"
-                        rules={[{ required: true, message: 'Vui lòng nhập tên danh mục!' }]}
-                    >
+                <Form form={form} onFinish={handleAddCategory}>
+                    <Form.Item name="namecategory" label="Tên danh mục" rules={[{ required: true, message: 'Vui lòng nhập tên danh mục!' }]}>
                         <Input />
                     </Form.Item>
-
-                    <Form.Item
-                        label="Mô tả"
-                        name="description"
-                    >
-                        <Input />
+                    <Form.Item name="description" label="Mô tả" rules={[{ required: true, message: 'Vui lòng nhập mô tả!' }]}>
+                        <Input.TextArea />
                     </Form.Item>
-
-                    <Button type="primary" htmlType="submit">
-                        Thêm
-                    </Button>
+                    <Form.Item name="imgcategory" label="Hình ảnh" rules={[{ required: true, message: 'Vui lòng chọn hình ảnh!' }]}>
+                        <Upload accept="image/*" beforeUpload={() => false}>
+                            <Button icon={<UploadOutlined />}></Button>
+                        </Upload>
+                    </Form.Item>
+                    <Form.Item>
+                        <Button type="primary" htmlType="submit">Thêm danh mục</Button>
+                    </Form.Item>
                 </Form>
             </Modal>
+            
+            {/* Modal Cập nhật danh mục */}
+            <Modal
+                title="Cập nhật danh mục"
+                visible={isModalVisible}
+                onCancel={() => setIsModalVisible(false)}
+                footer={null}
+            >
+                <Form form={form} onFinish={handleUpdateCategory}>
+                    <Form.Item name="namecategory" label="Tên danh mục" rules={[{ required: true, message: 'Vui lòng nhập tên danh mục!' }]}>
+                        <Input />
+                    </Form.Item>
+                    <Form.Item name="description" label="Mô tả" rules={[{ required: true, message: 'Vui lòng nhập mô tả!' }]}>
+                        <Input.TextArea />
+                    </Form.Item>
+                    <Form.Item name="imgcategory" label="Hình ảnh">
+                        <Upload accept="image/*" beforeUpload={() => false}>
+                            <Button icon={<UploadOutlined />}></Button>
+                        </Upload>
+                    </Form.Item>
+                    <Form.Item>
+                        <Button type="primary" htmlType="submit">Cập nhật danh mục</Button>
+                    </Form.Item>
+                </Form>
+            </Modal>
+            
+            {/* Modal Xóa danh mục */}
+            <Modal
+    title="Xóa danh mục"
+    visible={isModalVisibleDel}
+    onCancel={() => setIsModalVisibleDel(false)}
+    footer={null}
+>
+    <p>Bạn có chắc chắn muốn xóa danh mục này không?</p>
+    <div className="modal-footer">
+        <Button type="primary" danger onClick={() => handleDelete(id)}>Xóa</Button>
+        <Button onClick={() => setIsModalVisibleDel(false)}>Hủy</Button>
+    </div>
+</Modal>
+
         </div>
     );
 };

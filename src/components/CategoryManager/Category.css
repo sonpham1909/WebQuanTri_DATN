@@ -1,0 +1,73 @@
+
+.container {
+    width: 100%;
+    display: block;
+    margin: auto;
+    padding: 10px;
+}
+
+.headerPage {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+}
+
+.titlepage {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 24px; 
+    margin-bottom: 20px;
+}
+
+.headerActions {
+    display: flex;
+    align-items: center; 
+}
+
+.totalCategories {
+    margin-right: 450px; 
+    font-size: 16px; 
+    font-weight: bold; 
+}
+
+.buttonAdd {
+    width: 120px;
+    background-color: #1d79d5;
+    color: #ffffff;
+    border: none; 
+    border-radius: 5px; 
+    padding: 10px; 
+    cursor: pointer; 
+    margin-right:20px ;
+}
+
+.buttonAdd:hover {
+    background-color: #156ab5; 
+}
+
+.inputSearch {
+    margin-bottom: 20px;
+    width: 300px; 
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end; 
+    gap: 10px; 
+}
+
+.modal-footer .ant-btn {
+    margin-left: 0; 
+}
+.modal-footer {
+    display: flex;
+    justify-content: flex-end; 
+    gap: 80px; 
+    margin-top: 20px; 
+}
+.modal-footer .ant-btn {
+    margin-left: 0; 
+}
+.modal-footer .ant-btn:hover {
+    opacity: 0.8; 
+}

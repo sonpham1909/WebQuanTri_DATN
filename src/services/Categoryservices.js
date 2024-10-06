@@ -6,6 +6,7 @@ const API_URL = 'http://localhost:3000/v1/categorys';
 const getToken = () => {
     return localStorage.getItem('token'); // Hoặc sử dụng sessionStorage nếu cần
 };
+
 const axiosInstance = axios.create({
     baseURL: API_URL,
     headers: {
@@ -13,10 +14,13 @@ const axiosInstance = axios.create({
     }
 });
 
+
+// Cập nhật token trong headers
 axiosInstance.interceptors.request.use((config) => {
-    const token = getToken(); // Lấy token mới nhất
+    const token = getToken();
     if (token) {
-        config.headers['Authorization'] = `Bearer ${token}`; // Cập nhật header với token
+        config.headers['Authorization'] = `Bearer ${token}`;
+
     }
     return config;
 });

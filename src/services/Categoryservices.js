@@ -14,11 +14,13 @@ const axiosInstance = axios.create({
     }
 });
 
+
 // Cập nhật token trong headers
 axiosInstance.interceptors.request.use((config) => {
     const token = getToken();
     if (token) {
         config.headers['Authorization'] = `Bearer ${token}`;
+
     }
     return config;
 });

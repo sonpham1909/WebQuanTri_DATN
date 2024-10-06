@@ -104,6 +104,7 @@ const Usermanager = () => {
             // Cập nhật lại danh sách người dùng sau khi xóa
             setUsers(users.filter(user => user._id !== userId));
             setid('');
+            fetchUsersSearch(searchText);
             setIsModalVisibleDel(false);
         } catch (error) {
             message.error('Xóa người dùng thất bại');
@@ -283,7 +284,7 @@ const Usermanager = () => {
             </Select>
             <div className="headerPage">
                 <h3 className="titlepage">Quản lý người dùng</h3>
-                <p>Tổng: {userSearch && userSearch.length > 0 ? userSearch.length : users.length} người dùng</p>
+                <p>Tổng: {userSearch && userSearch.length > 0 && searchText !=='' ? userSearch.length : users.length} người dùng</p>
 
                 <Button className="buttonAdd" onClick={() => setIsModalVisibleAdd(true)}>Thêm người dùng mới</Button>
             </div>

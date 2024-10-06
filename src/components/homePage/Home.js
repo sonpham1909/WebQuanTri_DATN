@@ -6,6 +6,8 @@ import Dardboard from '../Dartboard/Dardboard';
 import CategoryManager from '../CategoryManager/CategoryManager';
 import ProductManager from '../ProductsManager/ProductManager';
 import BillManager from '../BilManager/BillManager';
+import AddressManager from '../AddressManager/AddressManager';
+
 
 function Home() {
   const [selectedSidebarItem, setSelectedSidebarItem] = useState('item1');
@@ -26,6 +28,8 @@ function Home() {
         return <ProductManager />
       case 'item4':
         return <BillManager />
+        case 'item5':
+          return <AddressManager />
       default:
         return 'Không tìm thấy nội dung';
     }
@@ -69,6 +73,12 @@ function Home() {
               onClick={() => handleSidebarItemClick('item4')}
             >
               Quản lý đơn hàng
+            </li>
+            <li
+              className={selectedSidebarItem === 'item5' ? 'active' : ''}
+              onClick={() => handleSidebarItemClick('item5')}
+            >
+              Quản lý địa chỉ
             </li>
           </ul>
         </div>

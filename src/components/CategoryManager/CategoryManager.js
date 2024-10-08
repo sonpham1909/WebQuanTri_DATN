@@ -16,6 +16,7 @@ const CategoryManager = () => {
     const [isModalVisibleAdd, setIsModalVisibleAdd] = useState(false);
     const [form] = Form.useForm();
     const [searchText, setSearchText] = useState('');
+    const [imgFile, setImgFile] = useState(null); // Thêm trạng thái để theo dõi hình ảnh đã chọn
 
     const fetchCategories = async () => {
         setLoading(true);
@@ -54,15 +55,18 @@ const CategoryManager = () => {
     const showModalAdd = () => {
         setIsModalVisibleAdd(true);
         form.resetFields();
+        setImgFile(null);
     };
 
     const showModalUpdate = (category) => {
+        form.resetFields(); 
         setSelectedCategory(category);
         form.setFieldsValue({
             namecategory: category.namecategory,
             description: category.description,
-            imgcategory: category.imgcategory,
+            imgcategory: undefined, // Đặt lại trường imgcategory trong form
         });
+        setImgFile(null); // Reset trạng thái hình ảnh
         setIsModalVisible(true);
     };
 
@@ -93,10 +97,12 @@ const CategoryManager = () => {
             const formData = new FormData();
             formData.append('namecategory', values.namecategory);
             formData.append('description', values.description);
-            if (values.imgcategory?.file) {
-                formData.append('imgcategory', values.imgcategory.file);
+    
+            // Chỉ thêm hình ảnh nếu có file mới
+            if (imgFile) {
+                formData.append('imgcategory', imgFile);
             }
-
+    
             await updateCategory(selectedCategory._id, formData);
             message.success("Cập nhật danh mục thành công!");
             setIsModalVisible(false);
@@ -129,7 +135,7 @@ const CategoryManager = () => {
                 value={searchText}
                 onChange={onSearchChange}
                 prefix={<SearchOutlined />}
-                className="inputSearch" // class CSS cho ô tìm kiếm
+                className="inputSearch" 
             />
             
             {/* Hàng tiêu đề và tổng danh mục */}
@@ -144,7 +150,8 @@ const CategoryManager = () => {
             {loading ? (
                 <LoadingCo />
             ) : (
-                <Table dataSource={categories} rowKey="_id">
+                <Table dataSource={categories} rowKey="_id" pagination={{ pageSize: 5 }}>
+                    <Table.Column title="STT" render={(text, record, index) => index + 1} />
                     <Table.Column title="Tên danh mục" dataIndex="namecategory" />
                     <Table.Column title="Mô tả" dataIndex="description" />
                     <Table.Column
@@ -179,16 +186,35 @@ const CategoryManager = () => {
                         <Input.TextArea />
                     </Form.Item>
                     <Form.Item name="imgcategory" label="Hình ảnh" rules={[{ required: true, message: 'Vui lòng chọn hình ảnh!' }]}>
-                        <Upload accept="image/*" beforeUpload={() => false}>
+                        <Upload 
+                            accept="image/*" 
+                            beforeUpload={(file) => {
+                                setImgFile(file); 
+                                return false; // Ngăn chặn tự động tải lên
+                            }} 
+                            maxCount={1} // Chỉ cho phép chọn 1 ảnh
+                        >
                             <Button icon={<UploadOutlined />}></Button>
                         </Upload>
                     </Form.Item>
+                    
+                    {/* Hiển thị hình ảnh đã chọn */}
+                    {imgFile && (
+                        <div style={{ marginTop: '10px' }}>
+                            <img 
+                                src={URL.createObjectURL(imgFile)} 
+                                alt="Selected" 
+                                style={{ width: '100px', marginBottom: '10px' }} 
+                            />
+                        </div>
+                    )}
+
                     <Form.Item>
                         <Button type="primary" htmlType="submit">Thêm danh mục</Button>
                     </Form.Item>
                 </Form>
             </Modal>
-            
+
             {/* Modal Cập nhật danh mục */}
             <Modal
                 title="Cập nhật danh mục"
@@ -206,32 +232,50 @@ const CategoryManager = () => {
                     <Form.Item name="description" label="Mô tả" rules={[{ required: true, message: 'Vui lòng nhập mô tả!' }]}>
                         <Input.TextArea />
                     </Form.Item>
-                    <Form.Item name="imgcategory" label="Hình ảnh">
-                        <Upload accept="image/*" beforeUpload={() => false}>
+                    
+                    {/* Hiển thị ảnh cũ hoặc ảnh mới */}
+                    <Form.Item label="Hình ảnh">
+                        {imgFile ? (
+                            <img src={URL.createObjectURL(imgFile)} alt="New Category" style={{ width: '100px', marginBottom: '10px' }} />
+                        ) : (
+                            selectedCategory?.imgcategory && (
+                                <img src={selectedCategory.imgcategory} alt="Old Category" style={{ width: '100px', marginBottom: '10px' }} />
+                            )
+                        )}
+                    </Form.Item>
+
+                    <Form.Item name="imgcategory" label="Chọn hình ảnh mới">
+                        <Upload 
+                            accept="image/*" 
+                            beforeUpload={(file) => { setImgFile(file); return false; }} // Cập nhật hình ảnh
+                            maxCount={1}
+                            >
                             <Button icon={<UploadOutlined />}></Button>
                         </Upload>
                     </Form.Item>
+
                     <Form.Item>
                         <Button type="primary" htmlType="submit">Cập nhật danh mục</Button>
                     </Form.Item>
                 </Form>
             </Modal>
-            
+
             {/* Modal Xóa danh mục */}
             <Modal
-    title="Xóa danh mục"
-    visible={isModalVisibleDel}
-    onCancel={() => setIsModalVisibleDel(false)}
-    footer={null}
->
-    <p>Bạn có chắc chắn muốn xóa danh mục này không?</p>
-    <div className="modal-footer">
-        <Button type="primary" danger onClick={() => handleDelete(id)}>Xóa</Button>
-        <Button onClick={() => setIsModalVisibleDel(false)}>Hủy</Button>
-    </div>
-</Modal>
-
-
+                title="Xóa danh mục"
+                visible={isModalVisibleDel}
+                onCancel={() => setIsModalVisibleDel(false)}
+                footer={[
+                    <Button key="cancel" onClick={() => setIsModalVisibleDel(false)}>
+                        Hủy
+                    </Button>,
+                    <Button key="delete" danger onClick={() => handleDelete(id)}>
+                        Xóa
+                    </Button>,
+                ]}
+            >
+                <p>Bạn có chắc chắn muốn xóa danh mục này?</p>
+            </Modal>
         </div>
     );
 };

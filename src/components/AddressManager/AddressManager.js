@@ -98,6 +98,16 @@ const AddressManager = () => {
     const handleAddAddress = async () => {
         const hasAddresses = addresses.length > 0;
     
+        if (!newAddress.full_name || !newAddress.city || !newAddress.district || !newAddress.ward || !newAddress.street||!newAddress.phone) {
+            notification.error({ message: 'Tất cả các trường bắt buộc phải được điền đầy đủ.' });
+            return;
+        }
+     // Kiểm tra hợp lệ số điện thoại
+     if (!/^\d{10,}$/.test(newAddress.phone)) {
+        notification.error({ message: 'Số điện thoại phải là số và có ít nhất 10 chữ số.' });
+        return;
+    }
+    
         const addressData = {
             addressDetail: {
                 street: newAddress.street,
@@ -105,8 +115,8 @@ const AddressManager = () => {
                 district: newAddress.district,
                 city: newAddress.city,
             },
-            recipientName: selectedUser.full_name,
-            recipientPhone: selectedUser.phone_number,
+            recipientName: newAddress.full_name,
+            recipientPhone: newAddress.phone,  // Số điện thoại mới
             notes: newAddress.notes,
             isDefault: !hasAddresses,
             id_user: selectedUser._id,
@@ -132,10 +142,11 @@ const AddressManager = () => {
             notification.error({ message: editAddressIndex !== null ? 'Cập nhật địa chỉ không thành công' : 'Thêm địa chỉ không thành công' });
         }
     };
+    
 
     const handleDeleteAddress = async (index) => {
         const addressToDelete = addresses[index];
-        
+
         Modal.confirm({
             title: 'Bạn có chắc chắn muốn xóa địa chỉ này?',
             content: 'Địa chỉ sẽ bị xóa vĩnh viễn và không thể khôi phục.',
@@ -164,10 +175,13 @@ const AddressManager = () => {
             ward: addressToEdit.addressDetail.ward,
             street: addressToEdit.addressDetail.street,
             notes: addressToEdit.notes,
+            full_name: addressToEdit.recipientName,  // Tên người nhận
+            phone: addressToEdit.recipientPhone,  // Số điện thoại
         });
         setEditAddressIndex(index);
         setIsAddAddressModalVisible(true);
     };
+
 
     const handleSetDefaultAddress = async (index) => {
         const addressToSetDefault = addresses[index];
@@ -192,12 +206,15 @@ const AddressManager = () => {
                 addr.id_user === selectedUser._id ? updatedAddresses.find(a => a._id === addr._id) || addr : addr
             ));
 
+            // Hiển thị số điện thoại của địa chỉ mặc định mới
+
             notification.success({ message: 'Cập nhật địa chỉ mặc định thành công!' });
         } catch (error) {
             console.error("Failed to set default address", error);
             notification.error({ message: 'Cập nhật địa chỉ mặc định không thành công' });
         }
     };
+
 
     const handleDoubleClickAddress = (index) => {
         handleSetDefaultAddress(index);
@@ -249,7 +266,7 @@ const AddressManager = () => {
                 value={searchText}
                 onChange={handleSearch}
                 prefix={<SearchOutlined />}
-                style={{ marginBottom: '20px',width:'300px'}}
+                style={{ marginBottom: '20px', width: '300px' }}
             />
             <Table
                 columns={columns}
@@ -275,26 +292,35 @@ const AddressManager = () => {
                 ]}
                 width={800}
             >
-                <List
-                    itemLayout="horizontal"
-                    dataSource={addresses}
-                    renderItem={(item, index) => (
-                        <List.Item
-                            actions={[
-                                <Button type="link" onClick={() => handleEditAddress(index)}>Sửa</Button>,
-                                <Button type="link" onClick={() => handleDeleteAddress(index)}>Xóa</Button>,
-                            ]}
-                            onDoubleClick={() => handleDoubleClickAddress(index)} // Sự kiện double click để đặt địa chỉ làm mặc định
-                        >
-                            <div>
-                                {`${item.addressDetail.street}, ${item.addressDetail.ward}, ${item.addressDetail.district}, ${item.addressDetail.city}`}
-                                {item.notes && <div><strong>Ghi chú:</strong> {item.notes}</div>}
-                                {item.isDefault && <div><strong>(Địa chỉ mặc định)</strong></div>}
-                            </div>
-                        </List.Item>
-                    )}
-                />
+                {addresses.length > 0 ? (
+                    <>
+                        <List
+                            itemLayout="horizontal"
+                            dataSource={addresses}
+                            renderItem={(item, index) => (
+                                <List.Item
+                                    actions={[
+                                        <Button type="link" onClick={() => handleEditAddress(index)}>Sửa</Button>,
+                                        <Button type="link" onClick={() => handleDeleteAddress(index)}>Xóa</Button>,
+                                    ]}
+                                    onDoubleClick={() => handleDoubleClickAddress(index)}
+                                >
+                                    <div>
+                                        <p><strong>Họ và Tên: </strong> {item.recipientName}</p>
+                                        <p><strong>Số điện thoại: </strong> {item.recipientPhone}</p>
+                                        <p><strong>Địa chỉ: </strong>{`${item.addressDetail.street}, ${item.addressDetail.ward}, ${item.addressDetail.district}, ${item.addressDetail.city}`}</p>
+                                        {item.notes && <div><strong>Ghi chú: </strong> {item.notes}</div>}
+                                        {item.isDefault && <div><strong>(Địa chỉ mặc định)</strong></div>}
+                                    </div>
+                                </List.Item>
+                            )}
+                        />
+                    </>
+                ) : (
+                    <p>Chưa có địa chỉ nào.</p>
+                )}
             </Modal>
+
             <Modal
                 visible={isAddAddressModalVisible}
                 title={editAddressIndex !== null ? 'Cập nhật địa chỉ' : 'Thêm địa chỉ mới'}
@@ -309,6 +335,13 @@ const AddressManager = () => {
                 ]}
             >
                 <Form form={form} layout="vertical">
+                    <Form.Item label="Họ và Tên">
+                        <Input value={newAddress.full_name} onChange={(e) => setNewAddress({ ...newAddress, full_name: e.target.value })} />
+                    </Form.Item>
+                    <Form.Item label="Số điện thoại">
+                        <Input value={newAddress.phone} onChange={(e) => setNewAddress({ ...newAddress, phone: e.target.value })} />
+                    </Form.Item>
+
                     <Form.Item label="Tỉnh/Thành phố">
                         <Input value={newAddress.city} onChange={(e) => setNewAddress({ ...newAddress, city: e.target.value })} />
                     </Form.Item>

@@ -1,9 +1,11 @@
+// src/CategoryManager/CategoryManager.js
 import React, { useCallback, useEffect, useState } from 'react';
 import { addCategory, deleteCategory, getAllCategories, searchCategories, updateCategory } from '../../services/Categoryservices';
 import { Button, Table, Modal, message, Form, Input, Upload } from 'antd';
 import LoadingCo from '../loading/loading';
 import { SearchOutlined, UploadOutlined } from '@ant-design/icons';
 import { debounce } from 'lodash';
+import { useNavigate } from 'react-router-dom'; // Thêm import này
 import './Category.css';  
 
 const CategoryManager = () => {
@@ -16,12 +18,14 @@ const CategoryManager = () => {
     const [isModalVisibleAdd, setIsModalVisibleAdd] = useState(false);
     const [form] = Form.useForm();
     const [searchText, setSearchText] = useState('');
-    const [imgFile, setImgFile] = useState(null); // Thêm trạng thái để theo dõi hình ảnh đã chọn
+    const [imgFile, setImgFile] = useState(null); // Trạng thái theo dõi hình ảnh đã chọn
+    const navigate = useNavigate(); // Khởi tạo navigate
 
     const fetchCategories = async () => {
         setLoading(true);
         try {
             const result = await getAllCategories();
+            console.log(result); // Kiểm tra dữ liệu trả về từ API
             setCategories(result);
         } catch (error) {
             console.error("Error fetching categories:", error);
@@ -127,6 +131,10 @@ const CategoryManager = () => {
         fetchCategories();
     }, []);
 
+    const handleCategoryClick = (categoryId) => {
+        navigate(`/home/subcategory?categoryId=${categoryId}`); // Chuyển hướng đến màn Subcategory với tham số categoryId
+    };
+    
     return (
         <div className="container">
             {/* Hàng tìm kiếm */}
@@ -152,7 +160,15 @@ const CategoryManager = () => {
             ) : (
                 <Table dataSource={categories} rowKey="_id" pagination={{ pageSize: 5 }}>
                     <Table.Column title="STT" render={(text, record, index) => index + 1} />
-                    <Table.Column title="Tên danh mục" dataIndex="namecategory" />
+                    <Table.Column 
+                        title="Tên danh mục" 
+                        dataIndex="namecategory" 
+                        render={(text, record) => (
+                            <span onClick={() => handleCategoryClick(record._id)} style={{ cursor: 'pointer', color: 'blue' }}>
+                                {text}
+                            </span>
+                        )}
+                    />
                     <Table.Column title="Mô tả" dataIndex="description" />
                     <Table.Column
                         title="Hình ảnh"
@@ -232,27 +248,37 @@ const CategoryManager = () => {
                     <Form.Item name="description" label="Mô tả" rules={[{ required: true, message: 'Vui lòng nhập mô tả!' }]}>
                         <Input.TextArea />
                     </Form.Item>
-                    
-                    {/* Hiển thị ảnh cũ hoặc ảnh mới */}
-                    <Form.Item label="Hình ảnh">
-                        {imgFile ? (
-                            <img src={URL.createObjectURL(imgFile)} alt="New Category" style={{ width: '100px', marginBottom: '10px' }} />
-                        ) : (
-                            selectedCategory?.imgcategory && (
-                                <img src={selectedCategory.imgcategory} alt="Old Category" style={{ width: '100px', marginBottom: '10px' }} />
-                            )
-                        )}
-                    </Form.Item>
-
-                    <Form.Item name="imgcategory" label="Chọn hình ảnh mới">
+                    <Form.Item name="imgcategory" label="Hình ảnh">
                         <Upload 
                             accept="image/*" 
-                            beforeUpload={(file) => { setImgFile(file); return false; }} // Cập nhật hình ảnh
-                            maxCount={1}
-                            >
+                            beforeUpload={(file) => {
+                                setImgFile(file); 
+                                return false; // Ngăn chặn tự động tải lên
+                            }} 
+                            maxCount={1} // Chỉ cho phép chọn 1 ảnh
+                        >
                             <Button icon={<UploadOutlined />}></Button>
                         </Upload>
                     </Form.Item>
+                    
+                    {/* Hiển thị hình ảnh đã chọn hoặc ảnh hiện tại */}
+                    {imgFile ? (
+                        <div style={{ marginTop: '10px' }}>
+                            <img 
+                                src={URL.createObjectURL(imgFile)} 
+                                alt="Selected" 
+                                style={{ width: '100px', marginBottom: '10px' }} 
+                            />
+                        </div>
+                    ) : (
+                        <div style={{ marginTop: '10px' }}>
+                            <img 
+                                src={selectedCategory?.imgcategory} 
+                                alt="Current" 
+                                style={{ width: '100px', marginBottom: '10px' }} 
+                            />
+                        </div>
+                    )}
 
                     <Form.Item>
                         <Button type="primary" htmlType="submit">Cập nhật danh mục</Button>
@@ -260,19 +286,12 @@ const CategoryManager = () => {
                 </Form>
             </Modal>
 
-            {/* Modal Xóa danh mục */}
+         
             <Modal
-                title="Xóa danh mục"
+                title="Xác nhận xóa"
                 visible={isModalVisibleDel}
+                onOk={() => handleDelete(id)}
                 onCancel={() => setIsModalVisibleDel(false)}
-                footer={[
-                    <Button key="cancel" onClick={() => setIsModalVisibleDel(false)}>
-                        Hủy
-                    </Button>,
-                    <Button key="delete" danger onClick={() => handleDelete(id)}>
-                        Xóa
-                    </Button>,
-                ]}
             >
                 <p>Bạn có chắc chắn muốn xóa danh mục này?</p>
             </Modal>

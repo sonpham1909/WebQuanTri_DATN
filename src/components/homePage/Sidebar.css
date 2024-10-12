@@ -48,3 +48,20 @@
     font-family: Arial, Helvetica, sans-serif;
     font-size: 20px;
 }
+.logout-button {
+    background-color: #ff4c4c; /* Màu nền đỏ */
+    color: white; /* Màu chữ trắng */
+    border: none; /* Không có đường viền */
+    border-radius: 5px; /* Bo tròn góc */
+    padding: 10px 15px; /* Khoảng cách bên trong */
+    font-size: 16px; /* Kích thước chữ */
+    cursor: pointer; /* Hiển thị con trỏ tay khi hover */
+    transition: background-color 0.3s ease; /* Hiệu ứng chuyển đổi màu nền */
+  }
+  
+  .logout-button:hover {
+    background-color: #ff1a1a; /* Màu nền khi hover */
+  }
+  
+  
+  

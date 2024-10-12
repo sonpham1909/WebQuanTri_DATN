@@ -81,3 +81,9 @@ export const searchCategories = async (searchTerm) => {
         throw error;
     }
 };
+// CategoryServices.js
+export const getCategoryById = async (id) => {
+    const response = await fetch(`YOUR_API_URL/categories/${id}`); // Thay YOUR_API_URL bằng URL thực tế của bạn
+    if (!response.ok) throw new Error('Network response was not ok');
+    return await response.json();
+};

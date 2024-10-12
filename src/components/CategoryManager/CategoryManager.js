@@ -9,7 +9,7 @@ import './Category.css';
 const CategoryManager = () => {
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [selectedCategory, setSelectedCategory] = useState(null);
+    const [selectedCategory, setSelectedCategory] = useState([]);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [isModalVisibleDel, setIsModalVisibleDel] = useState(false);
     const [id, setId] = useState('');
@@ -31,14 +31,18 @@ const CategoryManager = () => {
     };
 
     const handleSearch = useCallback(
-        debounce(async (searchTerm) => {
-            if (searchTerm) {
-                const result = await searchCategories(searchTerm);
-                setCategories(result);
-            } else {
-                fetchCategories();
+        ()=>{
+            debounce(async (searchTerm) => {
+                if (searchTerm) {
+                    const result = await searchCategories(searchTerm);
+                    setCategories(result);
+                } else {
+                    fetchCategories();
+                }
+            
             }
-        }, 300),
+        
+        , 300)},
         []
     );
 
@@ -218,7 +222,10 @@ const CategoryManager = () => {
                 onCancel={() => setIsModalVisible(false)}
                 footer={null}
             >
+                  <p>id : {selectedCategory._id}</p>
                 <Form form={form} onFinish={handleUpdateCategory}>
+
+                  
                     <Form.Item name="namecategory" label="Tên danh mục" rules={[{ required: true, message: 'Vui lòng nhập tên danh mục!' }]}>
                         <Input />
                     </Form.Item>

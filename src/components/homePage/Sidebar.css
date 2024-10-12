@@ -1,9 +1,10 @@
 .sidebar {
     width: 200px; /* Kích thước sidebar */
     background-color: #1d79d5; /* Màu nền */
+    overflow-y: auto; 
     padding: 20px; /* Khoảng cách bên trong */
     position: fixed; /* Giữ sidebar cố định */
-    height: 100%; /* Độ cao 100% */
+    height: 100vh;/* Độ cao 100% */
     box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1); /* Đổ bóng cho sidebar */
 }
 

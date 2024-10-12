@@ -50,9 +50,12 @@ function Home() {
       case 'item3':
         return <ProductManager />;
       case 'item4':
+
         return <BillManager />;
       case 'item5':
         return <AddressManager />;
+
+        
       default:
         return 'Không tìm thấy nội dung';
     }

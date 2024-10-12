@@ -63,3 +63,14 @@ export const getProductById = async (productId) => {
         throw error;
     }
 };
+
+export const updateProduct = async (productId, productData) => {
+    try {
+        const response = await axiosInstance.put(`/update_product/${productId}`, productData); // Gửi yêu cầu PUT
+        return response.data;
+    } catch (error) {
+        console.error('Error while updating product:', error.response.data);
+        throw error;
+    }
+};
+

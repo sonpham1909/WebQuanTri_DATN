@@ -1,4 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
+ton, Table, Modal, message, Form, Input, Upload } from 'antd';
+
 import {
     addSubcategory,
     deleteSubcategory,
@@ -10,6 +12,7 @@ import { getAllProducts } from '../../services/ProductService';
 import { addProductSubCategory, getAllProductSubCategories, deleteProductSubCategory } from '../../services/Product_sub_categoriesServices';
 import { getAllCategories } from '../../services/Categoryservices';
 import { Button, Table, Modal, message, Form, Input, Upload, Select } from 'antd';
+
 import LoadingCo from '../loading/loading';
 import { SearchOutlined, UploadOutlined } from '@ant-design/icons';
 import { debounce } from 'lodash';
@@ -20,6 +23,7 @@ const { Option } = Select;
 const SubcategoryManager = () => {
     const location = useLocation();
     const query = new URLSearchParams(location.search);
+
     const categoryId = query.get('categoryId');
 
     const [categoryName, setCategoryName] = useState('');
@@ -37,12 +41,14 @@ const SubcategoryManager = () => {
     const [searchText, setSearchText] = useState('');
     const [imgFile, setImgFile] = useState(null);
     const [categories, setCategories] = useState([]);
+
     const [products, setProducts] = useState([]);
     const [productSubCategories, setProductSubCategories] = useState([]);
     const [productNames, setProductNames] = useState({});
     const [selectedProductId, setSelectedProductId] = useState(null);
     const [isModalVisibleDelProduct, setIsModalVisibleDelProduct] = useState(false);
     const [productSubCategoryId, setProductSubCategoryId] = useState(null);
+
 
     const fetchSubcategories = async () => {
         setLoading(true);
@@ -60,12 +66,15 @@ const SubcategoryManager = () => {
     const fetchCategories = async () => {
         try {
             const result = await getAllCategories();
+
             setCategories(result);
             const category = result.find(cat => cat._id === categoryId);
+
             if (category) {
                 setCategoryName(category.namecategory);
             }
         } catch (error) {
+
             console.error("Lỗi khi lấy danh mục:", error);
         }
     };
@@ -93,6 +102,7 @@ const SubcategoryManager = () => {
             console.error("Lỗi khi lấy danh mục sản phẩm:", error);
         }
     };
+
 
     const handleSearch = useCallback(
         debounce(async (searchTerm) => {
@@ -252,6 +262,10 @@ const SubcategoryManager = () => {
 
     return (
         <div className="container">
+            <Button onClick={handleBack} type="primary">
+                Quay lại
+            </Button>
+
             <Input
                 placeholder="Tìm kiếm danh mục con"
                 value={searchText}
@@ -259,7 +273,7 @@ const SubcategoryManager = () => {
                 prefix={<SearchOutlined />}
                 className="inputSearch"
             />
-            
+
             <div className="headerPage">
                 <h2 className="titlepage">Quản lý danh mục con: {categoryName}</h2>
                 <div className="headerActions">
@@ -267,12 +281,13 @@ const SubcategoryManager = () => {
                     <Button className="buttonAdd" type="primary" onClick={showModalAdd}>Thêm</Button>
                 </div>
             </div>
-            
+
             {loading ? (
                 <LoadingCo />
             ) : (
                 <Table dataSource={subcategories} rowKey="_id" pagination={{ pageSize: 5 }}>
                     <Table.Column title="STT" render={(text, record, index) => index + 1} />
+
                     <Table.Column 
                         title="Tên danh mục con" 
                         dataIndex="name" 
@@ -282,6 +297,7 @@ const SubcategoryManager = () => {
                                 setIsModalVisibleProducts(true);
                             }}>{text}</Button>
                         )} 
+
                     />
                     <Table.Column
                         title="Hình ảnh"
@@ -303,7 +319,9 @@ const SubcategoryManager = () => {
                 </Table>
             )}
 
+
             {/* Modal Thêm Danh Mục Con */}
+
             <Modal
                 title="Thêm Danh Mục Con"
                 visible={isModalVisibleAdd}
@@ -314,6 +332,7 @@ const SubcategoryManager = () => {
                     <Form.Item name="name" label="Tên danh mục con" rules={[{ required: true, message: 'Vui lòng nhập tên danh mục con!' }]}>
                         <Input />
                     </Form.Item>
+
                     <Form.Item name="imgsubcategory" label="Hình ảnh" rules={[{ required: true, message: 'Vui lòng tải lên một hình ảnh!' }]}>
                         <Upload 
                             beforeUpload={(file) => {
@@ -321,10 +340,12 @@ const SubcategoryManager = () => {
                                 return false; // Ngăn chặn tự động tải lên
                             }} 
                             maxCount={1} // Giới hạn chỉ cho phép 1 hình ảnh
-                        >
+        >
                             <Button icon={<UploadOutlined />}></Button>
                         </Upload>
                     </Form.Item>
+
+
                     <Form.Item>
                         <Button type="primary" htmlType="submit">Thêm</Button>
                     </Form.Item>
@@ -342,6 +363,7 @@ const SubcategoryManager = () => {
                     <Form.Item name="name" label="Tên danh mục con" rules={[{ required: true, message: 'Vui lòng nhập tên danh mục con!' }]}>
                         <Input />
                     </Form.Item>
+
                     <Form.Item name="imgsubcategory" label="Hình ảnh (tùy chọn)">
                         <Upload 
                             beforeUpload={(file) => {
@@ -349,10 +371,13 @@ const SubcategoryManager = () => {
                                 return false; // Ngăn chặn tự động tải lên
                             }} 
                             maxCount={1} // Giới hạn chỉ cho phép 1 hình ảnh
+
                         >
                             <Button icon={<UploadOutlined />}></Button>
                         </Upload>
                     </Form.Item>
+
+
                     <Form.Item>
                         <Button type="primary" htmlType="submit">Cập nhật</Button>
                     </Form.Item>

@@ -1,19 +1,30 @@
 import React, { useEffect, useState } from 'react';
-import { addProduct, addVariantToProduct, getAllProducts, getProductById } from '../../services/ProductService';
+import { addProduct, addVariantToProduct, getAllProducts, getProductById, updateProduct } from '../../services/ProductService';
 import { Button, Table, Modal, Input, Form, Upload } from 'antd';
 import './index.css';
 import LoadingCo from '../loading/loading';
-import { SearchOutlined, UploadOutlined } from '@ant-design/icons';
-import { render } from '@testing-library/react';
+import { DeleteOutlined, SearchOutlined, UploadOutlined } from '@ant-design/icons';
 
 const ProductManager = () => {
   const [form] = Form.useForm();
-
   const [product, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalVisibleAdd, setIsModalVisibleAdd] = useState(false);
-  const [variants, setVariants] = useState([]);
-  const [isModalVisibleVariant, setIsModalVisibleVariant] = useState(false); // State cho 
+  const [isModalVisibleUpdateImage, setIsModalVisibleUpdateImage] = useState(false);
+  const [currentProductImages, setCurrentProductImages] = useState([]);
+  const [newImages, setNewImages] = useState([]); // State để lưu trữ hình ảnh mới
+
+  const [ImageToDel, setImageToDel] = useState([]);
+  const [Productss, setProductss] = useState([]);
+
+  // Quản lý biến thể thông qua state riêng lẻ
+  const [size, setSize] = useState('');
+  const [color, setColor] = useState('');
+  const [quantity, setQuantity] = useState(0);
+  const [price, setPrice] = useState(0);
+
+  const [variants, setVariants] = useState([]); // State lưu biến thể hiện có
+  const [isModalVisibleVariant, setIsModalVisibleVariant] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedProductId, setSelectedProductId] = useState(null);
   const pageSize = 5;
@@ -29,94 +40,144 @@ const ProductManager = () => {
     }
   };
 
+  const handleDeleteImage = (imageToDelete) => {
+    const updatedImages = currentProductImages.filter((image) => image !== imageToDelete);
+    setCurrentProductImages(updatedImages);
+    setImageToDel(imageToDelete);
+  };
+
+  const handleImageChange = (info) => {
+    if (info.fileList) {
+      setNewImages(info.fileList.map(file => file.originFileObj)); // Lưu hình ảnh mới
+    }
+  };
+
   const handleProductClick = async (productId) => {
     try {
+
       const product = await getProductById(productId);
-      setSelectedProductId(productId); // Lưu ID sản phẩm đã chọn
-      setVariants(product.variants || []); // Lấy các biến thể của sản phẩm đã chọn
-      setIsModalVisibleVariant(true); // Hiển thị modal biến thể
+      setIsModalVisibleVariant(true)
+      setSelectedProductId(productId);
+      setVariants(product.variants || []); // Đảm bảo đang set đúng
+
+      // Log biến thể ngay sau khi set
+      console.log('Current variants after set:', variants); // Có thể vẫn trả về giá trị cũ
     } catch (error) {
       console.error('Failed to fetch product:', error);
     }
   };
 
-
+  const handlresetVariant = () => {
+    setVariants([]);
+  }
 
   useEffect(() => {
     fetchProducts();
   }, []);
 
-  const addVariant = () => {
-    setVariants([...variants, { size: '', color: '', quantity: 0, price: 0 }]);
-  };
-
-  const handleVariantChange = (index, event) => {
-    const { name, value } = event.target;
-    const updatedVariants = [...variants];
-    updatedVariants[index] = { ...updatedVariants[index], [name]: value };
-    setVariants(updatedVariants);
-  };
-
-  const removeVariant = (index) => {
-    const updatedVariants = [...variants];
-    updatedVariants.splice(index, 1);
-    setVariants(updatedVariants);
-  };
-
   const handleSubmit = async (values) => {
     try {
       const formData = new FormData();
-
-      // Thêm các trường dữ liệu vào FormData
       formData.append('name', values.name);
       formData.append('category', values.category);
       formData.append('material', values.material);
       formData.append('description', values.description);
 
-      // Thêm tất cả hình ảnh vào FormData
-      const imageFiles = values.imageUrls.fileList; // Lấy danh sách tệp hình ảnh từ form
+      const imageFiles = values.imageUrls.fileList;
       imageFiles.forEach(file => {
-        formData.append('imageUrls', file.originFileObj); // Thêm tệp vào FormData
+        formData.append('imageUrls', file.originFileObj);
       });
 
-      // Thêm các biến thể sản phẩm vào FormData nếu có
-      variants.forEach((variant, index) => {
-        formData.append(`variants[${index}][size]`, variant.size);
-        formData.append(`variants[${index}][color]`, variant.color);
-        formData.append(`variants[${index}][quantity]`, variant.quantity);
-        formData.append(`variants[${index}][price]`, variant.price);
-      });
-
-      // Gửi FormData đến server
-      await addProduct(formData); // Thay đổi hàm này nếu cần
+      await addProduct(formData);
       alert('Product added successfully!');
       setIsModalVisibleAdd(false);
-      fetchProducts(); // Refresh the product list
+      fetchProducts();
     } catch (error) {
       console.error('Error adding product:', error);
       alert('Failed to add product');
     }
   };
 
-
-  const showVariantModal = (product) => {
-    setSelectedProductId(product._id); // Lưu ID sản phẩm đã chọn
-    setVariants(product.variants || []); // Lấy các biến thể của sản phẩm đã chọn
-    setIsModalVisibleVariant(true); // Hiển thị modal biến thể
+  const resetVariantForm = () => {
+    setSize('');
+    setColor('');
+    setQuantity(0);
+    setPrice(0);
   };
 
   const handleVariantSubmit = async () => {
-    const variant = variants[variants.length - 1]; // Giả sử bạn muốn thêm biến thể mới nhất
+    const newVariant = { size, color, quantity, price };
     try {
-      await addVariantToProduct(selectedProductId, variant);
+      await addVariantToProduct(selectedProductId, newVariant);
       alert('Variant added successfully!');
+      handlresetVariant();
+      resetVariantForm();
       setIsModalVisibleVariant(false);
-      fetchProducts(); // Refresh the product list
+      fetchProducts();
     } catch (error) {
       console.error('Error adding variant:', error);
       alert('Failed to add variant');
     }
   };
+
+  const handleProductClickUpdate = async (productId) => {
+    try {
+      const product = await getProductById(productId);
+      setProductss(product);
+      
+      console.log(product);
+      
+      setSelectedProductId(productId);
+      
+      setCurrentProductImages(product.imageUrls || []); // Lưu trữ hình ảnh hiện có
+      setIsModalVisibleUpdateImage(true);
+    } catch (error) {
+      console.error('Failed to fetch product:', error);
+    }
+  };
+
+  const handleUpdateImages = async (updatedData) => {
+    try {
+      const formData = new FormData();
+      formData.append('name', updatedData.nameU);
+      
+      formData.append('material', updatedData.materialU);
+      formData.append('description', updatedData.descriptionU);
+  
+      // Kiểm tra nếu có hình ảnh mới
+      const allImages = [...newImages];
+
+      console.log(allImages);
+      
+      
+      // Loại bỏ các ảnh trùng lặp nếu cần
+      const uniqueImages = [...new Set(allImages.map(image => image))];
+
+      // Thêm các ảnh vào formData
+      uniqueImages.forEach(image => {
+          formData.append('imageUrls', image); // Nếu hình ảnh hiện có đã được lưu dưới dạng file, có thể bỏ qua
+      });
+  
+      // Gửi danh sách hình ảnh muốn xóa
+      if (ImageToDel && ImageToDel.length > 0) {
+          formData.append('imagesToDelete', JSON.stringify(ImageToDel)); // Gửi danh sách hình ảnh cần xóa
+      }
+
+        await updateProduct(selectedProductId, formData);
+        alert('Cập nhật hình ảnh thành công!');
+        setImageToDel([]);
+        fetchProducts();
+        setNewImages([]);
+        setCurrentProductImages([]);
+       
+        setIsModalVisibleUpdateImage(false);
+        form.resetFields();
+        fetchProducts(); // Tải lại danh sách sản phẩm
+    } catch (error) {
+        console.error('Error updating images:', error);
+        alert('Cập nhật hình ảnh thất bại');
+    }
+};
 
   const columns = [
     {
@@ -138,11 +199,7 @@ const ProductManager = () => {
         return imageUrl ? <img src={imageUrl} alt="Img Product" style={{ width: '50px' }} /> : 'No Image';
       }
     },
-    {
-      title: "Loại sản phẩm",
-      dataIndex: "category.namecategory",
-      render: (text, record) => <span>{record.category ? record.category.namecategory : 'Không có danh mục'}</span>,
-    },
+    
     {
       title: 'Tổng số lượng',
       dataIndex: 'totalQuantity',
@@ -152,7 +209,7 @@ const ProductManager = () => {
       title: "Thao tác",
       render: (text, record) => (
         <div>
-          <Button>Cập nhật</Button>
+          <Button onClick={() => handleProductClickUpdate(record._id)}>Cập nhật</Button>
           <Button onClick={() => handleProductClick(record._id)}>Biến thể</Button>
         </div>
       )
@@ -203,7 +260,6 @@ const ProductManager = () => {
               <Button icon={<UploadOutlined />}>Tải lên hình ảnh</Button>
             </Upload>
           </Form.Item>
-
           <Form.Item label="Danh mục" name="category" rules={[{ required: true, message: 'Vui lòng nhập danh mục!' }]}>
             <Input required />
           </Form.Item>
@@ -214,52 +270,6 @@ const ProductManager = () => {
             <Input.TextArea required />
           </Form.Item>
 
-          <h3>Biến thể sản phẩm</h3>
-          {variants.map((variant, index) => (
-            <div key={index} style={{ marginBottom: '10px' }}>
-              <Form.Item label="Size">
-                <Input
-                  name="size"
-                  placeholder="Size"
-                  value={variant.size}
-                  onChange={(event) => handleVariantChange(index, event)}
-                  required
-                />
-              </Form.Item>
-              <Form.Item label="Màu sắc">
-                <Input
-                  name="color"
-                  placeholder="Color"
-                  value={variant.color}
-                  onChange={(event) => handleVariantChange(index, event)}
-                  required
-                />
-              </Form.Item>
-              <Form.Item label="Số lượng">
-                <Input
-                  type="number"
-                  name="quantity"
-                  placeholder="Số lượng"
-                  value={variant.quantity}
-                  onChange={(event) => handleVariantChange(index, event)}
-                  required
-                />
-              </Form.Item>
-              <Form.Item label="Giá">
-                <Input
-                  type="number"
-                  name="price"
-                  placeholder="Giá"
-                  value={variant.price}
-                  onChange={(event) => handleVariantChange(index, event)}
-                  required
-                />
-              </Form.Item>
-              <Button type="danger" onClick={() => removeVariant(index)}>Xóa biến thể</Button>
-            </div>
-          ))}
-          <Button type="primary" onClick={addVariant}>Thêm biến thể</Button>
-
           <Form.Item>
             <Button type="primary" htmlType="submit">Thêm sản phẩm</Button>
           </Form.Item>
@@ -267,64 +277,112 @@ const ProductManager = () => {
       </Modal>
 
       <Modal
-        title="Thêm biến thể cho sản phẩm"
-        visible={isModalVisibleVariant}
-        onCancel={() => setIsModalVisibleVariant(false)}
+        title="Cập nhật hình ảnh sản phẩm"
+        visible={isModalVisibleUpdateImage}
+        onCancel={() => {
+          form.resetFields();
+          setIsModalVisibleUpdateImage(false);
+          setImageToDel([]);
+          
+        }}
         footer={null}
       >
-        <div>
-          <h4>Biến thể hiện có</h4>
-          {variants.map((variant, index) => (
-            <div key={index}>
-              <p>Size: {variant.size}, Color: {variant.color}, Quantity: {variant.quantity}, Price: {variant.price}</p>
+        <h4>Hình ảnh hiện tại</h4>
+        <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+          {currentProductImages.map((image, index) => (
+            <div key={index} style={{ position: 'relative', marginRight: '10px', marginBottom: '10px' }}>
+              <img
+                src={image}
+                alt={`Current Product Image ${index + 1}`}
+                style={{ width: '100px', height: '100px' }}
+              />
+              <Button
+                type="primary"
+                icon={<DeleteOutlined />}
+                size="small"
+                style={{ position: 'absolute', top: 0, right: 0 }}
+                onClick={() => handleDeleteImage(image)}
+              />
             </div>
           ))}
-          <h4>Thêm biến thể mới</h4>
-          {variants.map((variant, index) => (
-            <div key={index}>
-              <Form.Item label="Size">
-                <Input
-                  name="size"
-                  placeholder="Size"
-                  value={variant.size}
-                  onChange={(event) => handleVariantChange(index, event)}
-                />
-              </Form.Item>
-              <Form.Item label="Màu sắc">
-                <Input
-                  name="color"
-                  placeholder="Color"
-                  value={variant.color}
-                  onChange={(event) => handleVariantChange(index, event)}
-                />
-              </Form.Item>
-              <Form.Item label="Số lượng">
-                <Input
-                  type="number"
-                  name="quantity"
-                  placeholder="Số lượng"
-                  value={variant.quantity}
-                  onChange={(event) => handleVariantChange(index, event)}
-                />
-              </Form.Item>
-              <Form.Item label="Giá">
-                <Input
-                  type="number"
-                  name="price"
-                  placeholder="Giá"
-                  value={variant.price}
-                  onChange={(event) => handleVariantChange(index, event)}
-                />
-              </Form.Item>
-
-              <Button type="danger" onClick={() => removeVariant(index)}>Xóa biến thể</Button>
+          {newImages.map((image, index) => (
+            <div key={`new-${index}`} style={{ position: 'relative', marginRight: '10px', marginBottom: '10px' }}>
+              <img
+                src={URL.createObjectURL(image)} // Tạo URL tạm thời cho hình ảnh mới
+                alt={`New Product Image ${index + 1}`}
+                style={{ width: '100px', height: '100px' }}
+              />
             </div>
           ))}
-          <Button type="primary" onClick={addVariant}>Thêm biến thể</Button>
-          <Button type="primary" onClick={handleVariantSubmit}>Lưu biến thể</Button>
         </div>
+        <Form form={form} layout="vertical" onFinish={handleUpdateImages}
+        initialValues={{
+          nameU: Productss.name,
+          materialU: Productss.material,
+          descriptionU: Productss.description,
+        }}
+        >
+          <Form.Item label="Hình ảnh mới" name="imageUrls">
+            <Upload accept="image/*" beforeUpload={() => false} multiple onChange={handleImageChange}>
+              <Button icon={<UploadOutlined />}>Tải lên hình ảnh</Button>
+            </Upload>
+          </Form.Item>
+
+          <Form.Item label="Tên sản phẩm" name="nameU" rules={[{ required: true, message: 'Vui lòng nhập tên sản phẩm!' }]}>
+      <Input required />
+    </Form.Item>
+   
+    <Form.Item label="Chất liệu" name="materialU" rules={[{ required: true, message: 'Vui lòng nhập chất liệu!' }]}>
+      <Input required />
+    </Form.Item>
+    <Form.Item label="Mô tả" name="descriptionU" rules={[{ required: true, message: 'Vui lòng nhập mô tả!' }]}>
+      <Input.TextArea required />
+    </Form.Item>
+          <Form.Item>
+            <Button type="primary" htmlType="submit">Cập nhật hình ảnh</Button>
+          </Form.Item>
+        </Form>
       </Modal>
 
+      <Modal
+        title="Thêm biến thể cho sản phẩm"
+        visible={isModalVisibleVariant}
+        onCancel={() => {
+          setIsModalVisibleVariant(false);
+          handlresetVariant();
+          setVariants([]);
+        }}
+        footer={null}
+      >
+        <Table
+            dataSource={variants}
+            columns={[
+              { title: 'Size', dataIndex: 'size', key: 'size' },
+              { title: 'Màu sắc', dataIndex: 'color', key: 'color' },
+              { title: 'Số lượng', dataIndex: 'quantity', key: 'quantity' },
+              { title: 'Giá', dataIndex: 'price', key: 'price' }
+            ]}
+            rowKey="_id"
+            pagination={false}
+          />
+        <Form layout="vertical" onFinish={handleVariantSubmit}>
+          <Form.Item label="Kích thước" rules={[{ required: true, message: 'Vui lòng nhập kích thước!' }]}>
+            <Input value={size} onChange={(e) => setSize(e.target.value)} required />
+          </Form.Item>
+          <Form.Item label="Màu sắc" rules={[{ required: true, message: 'Vui lòng nhập màu sắc!' }]}>
+            <Input value={color} onChange={(e) => setColor(e.target.value)} required />
+          </Form.Item>
+          <Form.Item label="Số lượng" rules={[{ required: true, message: 'Vui lòng nhập số lượng!' }]}>
+            <Input type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} required />
+          </Form.Item>
+          <Form.Item label="Giá" rules={[{ required: true, message: 'Vui lòng nhập giá!' }]}>
+            <Input type="number" value={price} onChange={(e) => setPrice(e.target.value)} required />
+          </Form.Item>
+          <Form.Item>
+            <Button type="primary" htmlType="submit">Thêm biến thể</Button>
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 };

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { addSubcategory, deleteSubcategory, getAllSubcategories, searchSubcategories, updateSubcategory } from '../../services/SubcategoryServices';
-import { getAllCategories } from '../../services/Categoryservices'; 
+import { getAllCategories } from '../../services/Categoryservices';
 import { Button, Table, Modal, message, Form, Input, Upload } from 'antd';
 import LoadingCo from '../loading/loading';
 import { SearchOutlined, UploadOutlined } from '@ant-design/icons';
@@ -11,7 +11,7 @@ const SubcategoryManager = () => {
     const location = useLocation();
     const query = new URLSearchParams(location.search);
     const categoryId = query.get('categoryId'); // Lấy categoryId từ URL
-    const [categoryName, setCategoryName] = useState(''); 
+    const [categoryName, setCategoryName] = useState('');
     const [subcategories, setSubcategories] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedSubcategory, setSelectedSubcategory] = useState(null);
@@ -22,8 +22,13 @@ const SubcategoryManager = () => {
     const [form] = Form.useForm();
     const [searchText, setSearchText] = useState('');
     const [imgFile, setImgFile] = useState(null);
-    const [categories, setCategories] = useState([]); 
+    const [categories, setCategories] = useState([]);
     const navigate = useNavigate();
+
+
+    const handleBack = () => {
+
+    };
 
 
 
@@ -42,20 +47,20 @@ const SubcategoryManager = () => {
     };
 
     const fetchCategories = async () => {
-      try {
-          const result = await getAllCategories();
-          console.log("Categories fetched:", result); // Kiểm tra danh sách categories
-          setCategories(result);
-          const category = result.find(cat => cat._id === categoryId);
-          console.log("Found category:", category); // Kiểm tra category tìm thấy
-          if (category) {
-              setCategoryName(category.namecategory);
-          }
-      } catch (error) {
-          console.error("Error fetching categories:", error);
-      }
-  };
-  
+        try {
+            const result = await getAllCategories();
+            console.log("Categories fetched:", result); // Kiểm tra danh sách categories
+            setCategories(result);
+            const category = result.find(cat => cat._id === categoryId);
+            console.log("Found category:", category); // Kiểm tra category tìm thấy
+            if (category) {
+                setCategoryName(category.namecategory);
+            }
+        } catch (error) {
+            console.error("Error fetching categories:", error);
+        }
+    };
+
 
     const handleSearch = useCallback(
         debounce(async (searchTerm) => {
@@ -152,14 +157,18 @@ const SubcategoryManager = () => {
 
     return (
         <div className="container">
+            <Button onClick={handleBack} type="primary">
+                Quay lại
+            </Button>
+
             <Input
                 placeholder="Tìm kiếm danh mục con"
                 value={searchText}
                 onChange={onSearchChange}
                 prefix={<SearchOutlined />}
-                className="inputSearch" 
+                className="inputSearch"
             />
-            
+
             <div className="headerPage">
                 <h2 className="titlepage">Quản lý danh mục con: {categoryName}</h2>
                 <div className="headerActions">
@@ -167,15 +176,15 @@ const SubcategoryManager = () => {
                     <Button className="buttonAdd" type="primary" onClick={showModalAdd}>Thêm </Button>
                 </div>
             </div>
-            
+
             {loading ? (
                 <LoadingCo />
             ) : (
                 <Table dataSource={subcategories} rowKey="_id" pagination={{ pageSize: 5 }}>
                     <Table.Column title="STT" render={(text, record, index) => index + 1} />
-                    <Table.Column 
-                        title="Tên danh mục con" 
-                        dataIndex="name" 
+                    <Table.Column
+                        title="Tên danh mục con"
+                        dataIndex="name"
                     />
                     <Table.Column
                         title="Hình ảnh"
@@ -193,7 +202,7 @@ const SubcategoryManager = () => {
                     />
                 </Table>
             )}
-            
+
             <Modal
                 title="Thêm danh mục con"
                 visible={isModalVisibleAdd}
@@ -204,26 +213,26 @@ const SubcategoryManager = () => {
                     <Form.Item name="name" label="Tên danh mục con" rules={[{ required: true, message: 'Vui lòng nhập tên danh mục con!' }]}>
                         <Input />
                     </Form.Item>
-            
+
                     <Form.Item name="imgsubcategory" label="Hình ảnh" rules={[{ required: true, message: 'Vui lòng chọn hình ảnh!' }]}>
-                        <Upload 
-                            accept="image/*" 
+                        <Upload
+                            accept="image/*"
                             beforeUpload={(file) => {
-                                setImgFile(file); 
+                                setImgFile(file);
                                 return false; // Ngăn chặn tự động tải lên
-                            }} 
+                            }}
                             maxCount={1}
                         >
                             <Button icon={<UploadOutlined />}></Button>
                         </Upload>
                     </Form.Item>
-                    
+
                     {imgFile && (
                         <div style={{ marginTop: '10px' }}>
-                            <img 
-                                src={URL.createObjectURL(imgFile)} 
-                                alt="Selected" 
-                                style={{ width: '100px', marginBottom: '10px' }} 
+                            <img
+                                src={URL.createObjectURL(imgFile)}
+                                alt="Selected"
+                                style={{ width: '100px', marginBottom: '10px' }}
                             />
                         </div>
                     )}
@@ -246,12 +255,12 @@ const SubcategoryManager = () => {
                     </Form.Item>
 
                     <Form.Item name="imgsubcategory" label="Hình ảnh">
-                        <Upload 
-                            accept="image/*" 
+                        <Upload
+                            accept="image/*"
                             beforeUpload={(file) => {
-                                setImgFile(file); 
+                                setImgFile(file);
                                 return false; // Ngăn chặn tự động tải lên
-                            }} 
+                            }}
                             maxCount={1}
                         >
                             <Button icon={<UploadOutlined />}></Button>
@@ -260,14 +269,14 @@ const SubcategoryManager = () => {
 
                     {imgFile && (
                         <div style={{ marginTop: '10px' }}>
-                            <img 
-                                src={URL.createObjectURL(imgFile)} 
-                                alt="Selected" 
-                                style={{ width: '100px', marginBottom: '10px' }} 
+                            <img
+                                src={URL.createObjectURL(imgFile)}
+                                alt="Selected"
+                                style={{ width: '100px', marginBottom: '10px' }}
                             />
                         </div>
                     )}
-                    
+
                     <Form.Item>
                         <Button type="primary" htmlType="submit">Cập nhật danh mục con</Button>
                     </Form.Item>

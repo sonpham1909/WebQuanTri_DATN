@@ -79,4 +79,8 @@ export const searchSubcategories = async (searchTerm) => { // Đổi tên hàm
         throw error;
     }
 };
+export const getProductsBySubcategory = async (subcategoryId) => {
+    const response = await axios.get(`${API_URL}/products?subcategoryId=${subcategoryId}`);
+    return response.data; // Hoặc xử lý dữ liệu theo yêu cầu của bạn
+};
 

@@ -54,11 +54,43 @@ export const updateUser = async (userId, userData) => {
         throw error;
     }
 };
-export const searchUsers = async (searchTerm) => {
+export const searchUsers = async (searchTerm,role) => {
     try {
         const response = await axiosInstance.get('/search', {
-            params: { keyword: searchTerm }, // Thay thế 'name' bằng trường bạn muốn tìm kiếm
+            params: { keyword: searchTerm,
+                roleName: role
+
+             }, 
+            // Thay thế 'name' bằng trường bạn muốn tìm kiếm
         });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+export const getRoleUser = async (userId) => {
+    try {
+        const response =await axiosInstance.get('/get_role_user');
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+export const addRole = async (id,userRole) => {
+    try {
+        const response = await axiosInstance.post(`/${id}/add_role`, userRole);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+
+export const deleteRole = async (id,role) => {
+    try {
+        const response = await axiosInstance.delete(`/${id}/delete_role`,{data:{role}});
         return response.data;
     } catch (error) {
         throw error;

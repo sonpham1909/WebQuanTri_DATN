@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { addUser, deleteUser, getAllUsers, searchUsers, updateUser } from '../../services/UserService';
-import { Button, Table, Modal, Avatar, Popconfirm, Alert, message, Form, Select, Input } from 'antd';
+import { addRole, addUser, deleteRole, deleteUser, getAllUsers, searchUsers, updateUser } from '../../services/UserService';
+import { Button, Table, Modal, Avatar, Popconfirm, Alert, message, Form, Select, Input, Tag } from 'antd';
 import './index.css';
 import LoadingCo from '../loading/loading';
 import FormDel from '../ActionForms/FormDel';
@@ -22,6 +22,10 @@ const Usermanager = () => {
     const [searchText, setsearchText] = useState('');
     const [userSearch, setUserSearch] = useState(null);
     const [roleFilter, setRoleFilter] = useState('');
+    const [roleSelected, setroleSelected] = useState(null);
+    const [isVisitableRole, setisVisitableRole] = useState(false);
+    const [roledel, setRoledel] = useState('');
+    const [roleSearch, setRoleSearch] = useState('');
 
     const [password, setPassword] = useState("");
     const [phone, setPhone] = useState("");
@@ -36,14 +40,9 @@ const Usermanager = () => {
     const fetchUsers = async () => {
         try {
             const data = await getAllUsers();
-            const filteredUsers = data.filter(user => {
-                if (roleFilter === '') return true; // Không lọc, trả về tất cả người dùng
-                if (roleFilter === 'admin' ) return user.admin === true;
-                return user.admin === false;
-                 // Lọc theo vai trò
-            });
-            setUsers(filteredUsers);
-            
+
+            setUsers(data);
+
         } catch (error) {
             console.error('Failed to fetch users', error);
         } finally {
@@ -53,14 +52,9 @@ const Usermanager = () => {
 
     const fetchUsersSearch = async (searchText) => {
         try {
-            const data = await searchUsers(searchText);
-            const filteredUsers = data.filter(user => {
-                if (roleFilter === '') return true; // Không lọc, trả về tất cả người dùng
-                if (roleFilter === 'admin' ) return user.admin === true;
-                return user.admin === false;
-                 // Lọc theo vai trò
-            });
-            setUserSearch(filteredUsers); // Lưu dữ liệu tìm kiếm vào state
+            const data = await searchUsers(searchText,roleSearch);
+
+            setUserSearch(data); // Lưu dữ liệu tìm kiếm vào state
             // Log dữ liệu tìm kiếm
         } catch (error) {
             console.error('Failed to fetch search users', error);
@@ -70,13 +64,34 @@ const Usermanager = () => {
 
     };
 
+    //handDle row
+
+    const HandleRole = (user) => {
+        setroleSelected(user.roles);
+        setid(user._id);
+        setisVisitableRole(true);
+
+
+
+    }
+
+    const handlecCancleRole = () => {
+        setid('');
+        setisVisitableRole(false);
+        setroleSelected(null);
+    }
+
 
 
 
     useEffect(() => {
 
-        fetchUsers();
-    }, [roleFilter]);
+        if (roleSearch) {
+            fetchUsersSearch(searchText); // Call search function when role is selected
+        } else {
+            fetchUsers(); // Fetch all users when no role is selected
+        }
+    }, [roleSearch]);
 
     const handleRowClick2 = (record) => {
         setSelectedUser(record); // Lưu thông tin người dùng được chọn
@@ -87,23 +102,20 @@ const Usermanager = () => {
     const debouncedFetchUsersSearch = useCallback(debounce(fetchUsersSearch, 1000), []);
 
     //check user có đc chọn ko
-    const checkSelectedUser = (values) => {
-        // Kiểm tra xem có ngưvalời dùng được chọn không (nếu có thì đang cập nhật)
-        if (selectedUser) {
-            handleUpdate(values);  // Gọi hàm cập nhật
-        } else {
-            handleSubmit(values);  // Gọi hàm thêm người dùng
-        }
-    }
+
 
     // Hàm xử lý xóa người dùng
-    const handleDelete = async (userId) => {
+    const handleDelete = async () => {
         try {
-            await deleteUser(userId); // Gọi API để xóa người dùng
+            console.log("role:",roledel);
+            
+            await deleteRole(id,roledel); // Gọi API để xóa người dùng
             message.success('Xóa người dùng thành công');
             // Cập nhật lại danh sách người dùng sau khi xóa
-            setUsers(users.filter(user => user._id !== userId));
+            fetchUsers();
             setid('');
+            setRoledel('');
+            setisVisitableRole(false);
             fetchUsersSearch(searchText);
             setIsModalVisibleDel(false);
         } catch (error) {
@@ -111,8 +123,8 @@ const Usermanager = () => {
         }
     };
 
-    const confirmDelete = (userId) => {
-        handleDelete(userId);
+    const confirmDelete = () => {
+        handleDelete();
 
     };
 
@@ -146,19 +158,34 @@ const Usermanager = () => {
             key: 'phone_number',
         },
         {
-            title: 'Role',
-            dataIndex: 'admin',
-            key: 'admin',
-            render: (admin) => (admin ? 'Admin' : 'User'),
+            title: 'Roles',
+            dataIndex: 'roles',
+            key: 'roles',
+            render: (roles) => (
+                <>
+                    {roles.map((role) => {
+                        let color = role === 'admin' ? 'red' : 'green'; // Admin: đỏ, User: xanh
+                        return (
+                            <Tag color={color} key={role}>
+                                {role.toUpperCase()}
+                            </Tag>
+                        );
+                    })}
+                </>
+            ),
         },
         {
             title: 'Actions',
             key: 'actions',
             render: (text, record) => (
-                <div>
+                <div style={{ display: 'flex' }}>
                     <Button type="primary" onClick={() => handleRowClick(record)} style={{ marginRight: '10px' }}>
                         Chi tiết
                     </Button>
+                    <Button type="primary" onClick={() => HandleRole(record)} style={{ marginRight: '10px', background: 'orange' }}>
+                        Role
+                    </Button>
+
                     {/* Nút Xóa */}
                     {/* <Popconfirm
                         title="Bạn có chắc chắn muốn xóa người dùng này?"
@@ -168,11 +195,11 @@ const Usermanager = () => {
                         okButtonProps={{ size:10 }}  // Đặt kích thước nhỏ cho nút "Yes"
                         cancelButtonProps={{ size: 20 }}  // Đặt kích thước nhỏ cho nút "No"
                     > */}
-
-                    <Button type="danger" onClick={() => {
+                    {/* 
+                    <Button type="danger"  onClick={() => {
                         setIsModalVisibleDel(true);
                         setid(record._id);
-                    }}>Xóa</Button>
+                    }}>Xóa</Button> */}
                     {/* </Popconfirm> */}
                 </div>
             ),
@@ -187,7 +214,7 @@ const Usermanager = () => {
             emailU: record.email,
             phone_numberU: record.phone_number,
             full_nameU: record.full_name,
-            adminU: record.admin
+            statusU: record.block
         });// Lưu thông tin người dùng được chọn
         setIsModalVisible(true); // Hiển thị modal
     };
@@ -223,6 +250,34 @@ const Usermanager = () => {
         }
     };
 
+    const handleAddRole = async (values) => {
+        try {
+            console.log('Form values:', values); 
+            console.log('Role to add:', values.roleA); 
+            // Gọi API để thêm người dùng mới
+            const userAdd = {
+               role:'admin'
+            }
+            await addRole(id,{role:values.roleA});
+            message.success('Thêm role mới thành công');
+            setid('');
+            fetchUsers();
+            setisVisitableRole(false);
+            fetchUsers();
+            form.resetFields(); // Reset form sau khi thêm thành công
+        } catch (error) {
+            message.error('Thêm người dùng thất bại');
+        }
+    };
+
+    //xóa role
+    const handleDelRole = (role) =>{
+        setIsModalVisibleDel(true);
+        setRoledel(role);
+
+    }
+
+
     const handleUpdate = async (values) => {
         try {
 
@@ -232,8 +287,10 @@ const Usermanager = () => {
                 email: values.emailU,
                 phone_number: values.phone_numberU,
                 full_name: values.full_nameU,
-                admin: values.adminU
+                block: values.statusU
             }
+            console.log(userUpdate); // Log to verify the values before API request
+
 
             await updateUser(selectedUser._id, userUpdate);
             message.success('Cập nhật người dùng thành công');
@@ -276,7 +333,12 @@ const Usermanager = () => {
             <Select
                 placeholder="Chọn vai trò"
                 style={{ marginBottom: 16, width: 200 }}
-                onChange={(value) => setRoleFilter(value)}
+                onChange={(value) => {
+                    setRoleSearch(value); // Set roleSearch based on the selection
+                    if (value === "") {
+                        fetchUsers(); // Fetch all users immediately when "Tất cả" is selected
+                    }
+                }}
             >
                 <Option value="">Tất cả</Option>
                 <Option value="admin">Admin</Option>
@@ -284,7 +346,7 @@ const Usermanager = () => {
             </Select>
             <div className="headerPage">
                 <h3 className="titlepage">Quản lý người dùng</h3>
-                <p>Tổng: {userSearch && userSearch.length > 0 && searchText !=='' ? userSearch.length : users.length} người dùng</p>
+                <p>Tổng: {userSearch && userSearch.length > 0 && searchText !== '' ? userSearch.length : users.length} người dùng</p>
 
                 <Button className="buttonAdd" onClick={() => setIsModalVisibleAdd(true)}>Thêm người dùng mới</Button>
             </div>
@@ -363,13 +425,13 @@ const Usermanager = () => {
                             </Form.Item>
 
                             <Form.Item
-                                label="Role"
-                                name="adminU"
+                                label="Trạng thái"
+                                name="statusU"
                                 rules={[{ required: true, message: 'Vui lòng chọn vai trò!' }]}
                             >
                                 <Select placeholder="Chọn vai trò">
-                                    <Option value={true}>Admin</Option>
-                                    <Option value={false}>User</Option>
+                                    <Option value={true}>khóa Tài Khoản</Option>
+                                    <Option value={false}>Đang hoạt động</Option>
                                 </Select>
                             </Form.Item>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -396,7 +458,7 @@ const Usermanager = () => {
 
 
 
-            <FormDel isVisible={isModalVisibleDel} onclickCan={handleCancledel} onclickDel={() => handleDelete(id)} />
+            <FormDel isVisible={isModalVisibleDel} onclickCan={handleCancledel} onclickDel={() => handleDelete()} />
             {/* <FormDel isVisible={isModalVisibleDel} onclickCan={()=>{setIsModalVisibleDel(false)}} onclickDel={confirmDelete(id)}/> */}
 
             {/*Thêm người dùng mới */}
@@ -456,16 +518,7 @@ const Usermanager = () => {
                         <Input />
                     </Form.Item>
 
-                    <Form.Item
-                        label="Role"
-                        name="admin"
-                        rules={[{ required: true, message: 'Vui lòng chọn vai trò!' }]}
-                    >
-                        <Select placeholder="Chọn vai trò">
-                            <Option value={true}>Admin</Option>
-                            <Option value={false}>User</Option>
-                        </Select>
-                    </Form.Item>
+                  
 
                     <Form.Item>
                         <Button type="primary" htmlType="submit" onClick={() => handleSubmit(form.getFieldsValue())} >
@@ -474,6 +527,65 @@ const Usermanager = () => {
                     </Form.Item>
                 </Form>
             </Modal>
+
+            <Modal
+                visible={isVisitableRole}
+                onCancel={handlecCancleRole}
+                footer={null}
+            >
+
+                <div>
+                <Form form={form}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+
+                       
+                            <Form.Item
+                                label="Role"
+                                name="roleA"
+                                rules={[{ required: true, message: 'Vui lòng chọn vai trò!' }]}
+                            ><Select placeholder="Chọn vai trò muốn thêm">
+                                    <Option value={'admin'}>Admin</Option>
+                                    <Option value={'user'}>User</Option>
+                                </Select>
+                            </Form.Item>
+                            <Form.Item>
+                                <Button style={{width:50}} type="primary" htmlType="submit" onClick={() => handleAddRole(form.getFieldsValue())} >
+                                    Thêm
+                                </Button>
+                            </Form.Item>
+               
+
+
+
+                    </div>
+                    </Form>
+
+                    {
+                        roleSelected && roleSelected.length > 0 ? (
+                            roleSelected.map((role) => {
+                                let color = role === 'admin' ? 'red' : 'green'; // Admin: đỏ, User: xanh
+                                return (
+                                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                                        <Tag style={{ width: 150, margin: 10 }} color={color} key={role}>
+                                            {role.toUpperCase()}
+                                        </Tag>
+
+                                        <Button onClick={()=>handleDelRole(role)} style={{ width: 50 }}>xóa</Button>
+                                    </div>
+                                );
+                            })
+                        ) : (
+                            <Tag color="gray" key="no-role">
+                                NO ROLES
+                            </Tag>
+                        )
+                    }
+                </div>
+
+
+
+            </Modal>
+
 
 
         </div>

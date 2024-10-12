@@ -7,8 +7,7 @@ import CategoryManager from '../CategoryManager/CategoryManager';
 import ProductManager from '../ProductsManager/ProductManager';
 import BillManager from '../BilManager/BillManager';
 import AddressManager from '../AddressManager/AddressManager';
-
-
+import { useNavigate } from 'react-router-dom';
 function Home() {
   const [selectedSidebarItem, setSelectedSidebarItem] = useState('item1');
 
@@ -16,20 +15,44 @@ function Home() {
     setSelectedSidebarItem(itemId);
   };
 
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      // Gửi yêu cầu đăng xuất (nếu cần)
+      await fetch('http://localhost:3000/v1/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+
+      // Xoá token khỏi localStorage
+      localStorage.removeItem('token');
+
+      // Sử dụng React Router để điều hướng
+      navigate('/login');
+    } catch (error) {
+      console.error('Đăng xuất thất bại:', error);
+    }
+  };
+
+
   const getContent = (itemId) => {
     switch (itemId) {
       case 'item1':
         return <Usermanager />;
       case 'item2':
-        return <CategoryManager />
+        return <CategoryManager />;
       case 'item0':
-        return <Dardboard />
+        return <Dardboard />;
       case 'item3':
-        return <ProductManager />
+        return <ProductManager />;
       case 'item4':
-        return <BillManager />
-        case 'item5':
-          return <AddressManager />
+        return <BillManager />;
+      case 'item5':
+        return <AddressManager />;
       default:
         return 'Không tìm thấy nội dung';
     }
@@ -81,6 +104,9 @@ function Home() {
               Quản lý địa chỉ
             </li>
           </ul>
+        
+
+
         </div>
         <div className="container">
           <div className="content">

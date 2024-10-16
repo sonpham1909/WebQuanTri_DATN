@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Sidebar.css';
 import Header from '../Header/Header';
 import Usermanager from '../UserManager/Usermanager';
@@ -7,9 +7,18 @@ import CategoryManager from '../CategoryManager/CategoryManager';
 import ProductManager from '../ProductsManager/ProductManager';
 import BillManager from '../BilManager/BillManager';
 import AddressManager from '../AddressManager/AddressManager';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+
 function Home() {
+  const location = useLocation();
   const [selectedSidebarItem, setSelectedSidebarItem] = useState('item1');
+
+  useEffect(() => {
+    // Kiểm tra nếu có state từ màn hình khác
+    if (location.state && location.state.selectedItem) {
+      setSelectedSidebarItem(location.state.selectedItem);
+    }
+  }, [location.state]);
 
   const handleSidebarItemClick = (itemId) => {
     setSelectedSidebarItem(itemId);
@@ -19,7 +28,6 @@ function Home() {
 
   const handleLogout = async () => {
     try {
-      // Gửi yêu cầu đăng xuất (nếu cần)
       await fetch('http://localhost:3000/v1/auth/logout', {
         method: 'POST',
         headers: {
@@ -28,16 +36,12 @@ function Home() {
         },
       });
 
-      // Xoá token khỏi localStorage
       localStorage.removeItem('token');
-
-      // Sử dụng React Router để điều hướng
       navigate('/login');
     } catch (error) {
       console.error('Đăng xuất thất bại:', error);
     }
   };
-
 
   const getContent = (itemId) => {
     switch (itemId) {
@@ -50,12 +54,9 @@ function Home() {
       case 'item3':
         return <ProductManager />;
       case 'item4':
-
         return <BillManager />;
       case 'item5':
         return <AddressManager />;
-
-        
       default:
         return 'Không tìm thấy nội dung';
     }
@@ -93,7 +94,6 @@ function Home() {
             >
               Quản lý sản phẩm
             </li>
-
             <li
               className={selectedSidebarItem === 'item4' ? 'active' : ''}
               onClick={() => handleSidebarItemClick('item4')}
@@ -107,14 +107,11 @@ function Home() {
               Quản lý địa chỉ
             </li>
           </ul>
-        
-
-
         </div>
         <div className="container">
           <div className="content">
             {selectedSidebarItem ? (
-              <p>{getContent(selectedSidebarItem)}</p>
+              getContent(selectedSidebarItem)
             ) : (
               <p>Vui lòng chọn một mục từ sidebar.</p>
             )}

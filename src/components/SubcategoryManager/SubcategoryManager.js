@@ -16,7 +16,8 @@ import { Button, Table, Modal, message, Form, Input, Upload, Select } from 'antd
 import LoadingCo from '../loading/loading';
 import { SearchOutlined, UploadOutlined } from '@ant-design/icons';
 import { debounce } from 'lodash';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import './index.css';
 
 const { Option } = Select;
 
@@ -48,7 +49,12 @@ const SubcategoryManager = () => {
     const [selectedProductId, setSelectedProductId] = useState(null);
     const [isModalVisibleDelProduct, setIsModalVisibleDelProduct] = useState(false);
     const [productSubCategoryId, setProductSubCategoryId] = useState(null);
+    const navigate = useNavigate();
 
+
+    const handleBackToHome = () => {
+      navigate('/home', { state: { selectedItem: 'item2' } });
+    };
 
     const fetchSubcategories = async () => {
         setLoading(true);
@@ -262,11 +268,9 @@ const SubcategoryManager = () => {
 
     return (
         <div className="container">
-            <Button  type="primary">
-                Quay lại
-            </Button>
 
-            
+             <button onClick={handleBackToHome}>Quay về </button>
+             
 
             <Input
                 placeholder="Tìm kiếm danh mục con"

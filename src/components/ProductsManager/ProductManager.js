@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { addProduct, addVariantToProduct, getAllProducts, getProductById, updateProduct } from '../../services/ProductService';
-import { Button, Table, Modal, Input, Form, Upload } from 'antd';
+import { addProduct, addVariantToProduct, deleteProduct, deleteVariants, getAllProducts, getProductById, updateProduct } from '../../services/ProductService';
+import { Button, Table, Modal, Input, Form, Upload, message } from 'antd';
 import './index.css';
 import LoadingCo from '../loading/loading';
-import { DeleteOutlined, SearchOutlined, UploadOutlined } from '@ant-design/icons';
+import Icon, { DeleteOutlined, SearchOutlined, UploadOutlined } from '@ant-design/icons';
+import FormDel from '../ActionForms/FormDel';
+import { listItemSecondaryActionClasses } from '@mui/material';
 
 const ProductManager = () => {
   const [form] = Form.useForm();
@@ -13,9 +15,15 @@ const ProductManager = () => {
   const [isModalVisibleUpdateImage, setIsModalVisibleUpdateImage] = useState(false);
   const [currentProductImages, setCurrentProductImages] = useState([]);
   const [newImages, setNewImages] = useState([]); // State để lưu trữ hình ảnh mới
+  const [IsModalRemove, setIsModalRemove] = useState(false);
+  const [IsModalRemoveVariants, seTIsModalRemoveVariants] = useState(false);
 
   const [ImageToDel, setImageToDel] = useState([]);
   const [Productss, setProductss] = useState([]);
+  const [idDel, setIdDel] = useState('');
+  const [idVariant, setIdVariant] = useState('');
+  const [idPro, setIdPro] = useState('');
+
 
   // Quản lý biến thể thông qua state riêng lẻ
   const [size, setSize] = useState('');
@@ -33,6 +41,8 @@ const ProductManager = () => {
     try {
       const data = await getAllProducts();
       setProducts(data);
+      console.log(product);
+
     } catch (error) {
       console.error('Failed to fetch products', error);
     } finally {
@@ -74,6 +84,16 @@ const ProductManager = () => {
   useEffect(() => {
     fetchProducts();
   }, []);
+
+  useEffect(() => {
+    if (Productss) {
+      form.setFieldsValue({
+        nameU: Productss.name,
+        materialU: Productss.material,
+        descriptionU: Productss.description,
+      });
+    }
+  }, [Productss, form]);
 
   const handleSubmit = async (values) => {
     try {
@@ -124,11 +144,11 @@ const ProductManager = () => {
     try {
       const product = await getProductById(productId);
       setProductss(product);
-      
+
       console.log(product);
-      
+
       setSelectedProductId(productId);
-      
+
       setCurrentProductImages(product.imageUrls || []); // Lưu trữ hình ảnh hiện có
       setIsModalVisibleUpdateImage(true);
     } catch (error) {
@@ -140,44 +160,90 @@ const ProductManager = () => {
     try {
       const formData = new FormData();
       formData.append('name', updatedData.nameU);
-      
+
       formData.append('material', updatedData.materialU);
       formData.append('description', updatedData.descriptionU);
-  
+
       // Kiểm tra nếu có hình ảnh mới
       const allImages = [...newImages];
 
       console.log(allImages);
-      
-      
+
+
       // Loại bỏ các ảnh trùng lặp nếu cần
       const uniqueImages = [...new Set(allImages.map(image => image))];
 
       // Thêm các ảnh vào formData
       uniqueImages.forEach(image => {
-          formData.append('imageUrls', image); // Nếu hình ảnh hiện có đã được lưu dưới dạng file, có thể bỏ qua
+        formData.append('imageUrls', image); // Nếu hình ảnh hiện có đã được lưu dưới dạng file, có thể bỏ qua
       });
-  
+
       // Gửi danh sách hình ảnh muốn xóa
       if (ImageToDel && ImageToDel.length > 0) {
-          formData.append('imagesToDelete', JSON.stringify(ImageToDel)); // Gửi danh sách hình ảnh cần xóa
+        formData.append('imagesToDelete', JSON.stringify(ImageToDel)); // Gửi danh sách hình ảnh cần xóa
       }
 
-        await updateProduct(selectedProductId, formData);
-        alert('Cập nhật hình ảnh thành công!');
-        setImageToDel([]);
-        fetchProducts();
-        setNewImages([]);
-        setCurrentProductImages([]);
-       
-        setIsModalVisibleUpdateImage(false);
-        form.resetFields();
-        fetchProducts(); // Tải lại danh sách sản phẩm
+      await updateProduct(selectedProductId, formData);
+      message.success('Cập nhật hình ảnh thành công!');
+      setImageToDel([]);
+      fetchProducts();
+      setNewImages([]);
+      setCurrentProductImages([]);
+
+      setIsModalVisibleUpdateImage(false);
+      form.resetFields();
+      fetchProducts(); // Tải lại danh sách sản phẩm
     } catch (error) {
-        console.error('Error updating images:', error);
-        alert('Cập nhật hình ảnh thất bại');
+      console.error('Error updating images:', error);
+      alert('Cập nhật hình ảnh thất bại');
     }
-};
+  };
+
+  const handleRemoveProduct = async () => {
+
+    try {
+      await deleteProduct(idDel);
+      setIsModalRemove(false);
+      message.success('Xóa sản phẩm thành công');
+      fetchProducts()
+
+
+
+    } catch (error) {
+      console.error('Error removing images:', error);
+      alert('Xóa sản phẩm thất bại');
+    }
+
+
+
+
+
+
+  }
+
+  const handleClickRemoveProduct = (product_id) => {
+
+    setIsModalRemove(true);
+    setIdDel(product_id);
+
+
+
+
+
+
+
+
+  }
+
+  const handleOncancelRemove = () => {
+    setIsModalRemove(false)
+    setIdDel('');
+  }
+
+  const handleOncancelRemoveVariants = () => {
+    seTIsModalRemoveVariants(false);
+    setIdVariant('');
+  }
 
   const columns = [
     {
@@ -191,6 +257,8 @@ const ProductManager = () => {
       dataIndex: 'name',
       key: 'name',
     },
+
+
     {
       title: "Hình ảnh",
       dataIndex: "imageUrls",
@@ -199,7 +267,19 @@ const ProductManager = () => {
         return imageUrl ? <img src={imageUrl} alt="Img Product" style={{ width: '50px' }} /> : 'No Image';
       }
     },
-    
+    {
+      title: 'Giá',
+      dataIndex: 'lowestPrice',
+      key: 'lowestPrice',
+      render: (price) => {
+        if (price) {
+          // Định dạng giá theo VND
+          return price.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' });
+        }
+        return 'Không có giá';
+      },
+    },
+
     {
       title: 'Tổng số lượng',
       dataIndex: 'totalQuantity',
@@ -208,13 +288,44 @@ const ProductManager = () => {
     {
       title: "Thao tác",
       render: (text, record) => (
-        <div>
-          <Button onClick={() => handleProductClickUpdate(record._id)}>Cập nhật</Button>
-          <Button onClick={() => handleProductClick(record._id)}>Biến thể</Button>
+        <div style={{ display: 'flex' }}>
+          <Button style={{ width: 80, backgroundColor: 'blue', marginLeft: 10, color: '#FFFFFF' }} onClick={() => handleProductClickUpdate(record._id)}>Cập nhật</Button>
+          <Button style={{ width: 80, backgroundColor: 'green', marginLeft: 10, color: '#FFFFFF' }} onClick={() => handleProductClick(record._id)}>Biến thể</Button>
+          <Button style={{ width: 50, backgroundColor: 'red', marginLeft: 10 }} onClick={() => handleClickRemoveProduct(record._id)}><DeleteOutlined /></Button>
         </div>
       )
     }
   ];
+
+  //Remove variants
+  const handleClickRemoveVariants = (variantsId) => {
+    seTIsModalRemoveVariants(true);
+    setIdVariant(variantsId);
+
+
+
+  }
+
+  const handleRemoveVariants = async () => {
+    try {
+      await deleteVariants(idVariant,selectedProductId);
+      message.success('Xóa biến thể thành công');
+     
+      setVariants(prevVariants => prevVariants.filter(variant => variant._id !== idVariant));
+      setIdVariant('');
+      seTIsModalRemoveVariants(false);
+    } catch (error) {
+      console.error('Error removing variants:', error);
+      alert('Xóa biến thể sản phẩm thất bại');
+    }
+
+
+  }
+
+
+
+
+  //Render UI UX
 
   if (loading) {
     return <LoadingCo />;
@@ -260,9 +371,7 @@ const ProductManager = () => {
               <Button icon={<UploadOutlined />}>Tải lên hình ảnh</Button>
             </Upload>
           </Form.Item>
-          <Form.Item label="Danh mục" name="category" rules={[{ required: true, message: 'Vui lòng nhập danh mục!' }]}>
-            <Input required />
-          </Form.Item>
+
           <Form.Item label="Chất liệu" name="material" rules={[{ required: true, message: 'Vui lòng nhập chất liệu!' }]}>
             <Input required />
           </Form.Item>
@@ -283,7 +392,7 @@ const ProductManager = () => {
           form.resetFields();
           setIsModalVisibleUpdateImage(false);
           setImageToDel([]);
-          
+
         }}
         footer={null}
       >
@@ -316,11 +425,7 @@ const ProductManager = () => {
           ))}
         </div>
         <Form form={form} layout="vertical" onFinish={handleUpdateImages}
-        initialValues={{
-          nameU: Productss.name,
-          materialU: Productss.material,
-          descriptionU: Productss.description,
-        }}
+
         >
           <Form.Item label="Hình ảnh mới" name="imageUrls">
             <Upload accept="image/*" beforeUpload={() => false} multiple onChange={handleImageChange}>
@@ -329,17 +434,17 @@ const ProductManager = () => {
           </Form.Item>
 
           <Form.Item label="Tên sản phẩm" name="nameU" rules={[{ required: true, message: 'Vui lòng nhập tên sản phẩm!' }]}>
-      <Input required />
-    </Form.Item>
-   
-    <Form.Item label="Chất liệu" name="materialU" rules={[{ required: true, message: 'Vui lòng nhập chất liệu!' }]}>
-      <Input required />
-    </Form.Item>
-    <Form.Item label="Mô tả" name="descriptionU" rules={[{ required: true, message: 'Vui lòng nhập mô tả!' }]}>
-      <Input.TextArea required />
-    </Form.Item>
+            <Input required />
+          </Form.Item>
+
+          <Form.Item label="Chất liệu" name="materialU" rules={[{ required: true, message: 'Vui lòng nhập chất liệu!' }]}>
+            <Input required />
+          </Form.Item>
+          <Form.Item label="Mô tả" name="descriptionU" rules={[{ required: true, message: 'Vui lòng nhập mô tả!' }]}>
+            <Input.TextArea required />
+          </Form.Item>
           <Form.Item>
-            <Button type="primary" htmlType="submit">Cập nhật hình ảnh</Button>
+            <Button type="primary" htmlType="submit">Cập nhật sản phẩm</Button>
           </Form.Item>
         </Form>
       </Modal>
@@ -355,16 +460,26 @@ const ProductManager = () => {
         footer={null}
       >
         <Table
-            dataSource={variants}
-            columns={[
-              { title: 'Size', dataIndex: 'size', key: 'size' },
-              { title: 'Màu sắc', dataIndex: 'color', key: 'color' },
-              { title: 'Số lượng', dataIndex: 'quantity', key: 'quantity' },
-              { title: 'Giá', dataIndex: 'price', key: 'price' }
-            ]}
-            rowKey="_id"
-            pagination={false}
-          />
+          dataSource={variants}
+          columns={[
+            { title: 'Size', dataIndex: 'size', key: 'size' },
+            { title: 'Màu sắc', dataIndex: 'color', key: 'color' },
+            { title: 'Số lượng', dataIndex: 'quantity', key: 'quantity' },
+            { title: 'Giá', dataIndex: 'price', key: 'price' },
+            {
+              title: 'Hành động', render: (text, record) => (
+                <div>
+                  <Button onClick={() => handleClickRemoveVariants(record._id)}><DeleteOutlined /></Button>
+
+                </div>
+              )
+
+
+            }
+          ]}
+          rowKey="_id"
+          pagination={false}
+        />
         <Form layout="vertical" onFinish={handleVariantSubmit}>
           <Form.Item label="Kích thước" rules={[{ required: true, message: 'Vui lòng nhập kích thước!' }]}>
             <Input value={size} onChange={(e) => setSize(e.target.value)} required />
@@ -383,6 +498,9 @@ const ProductManager = () => {
           </Form.Item>
         </Form>
       </Modal>
+
+      {IsModalRemove && <FormDel isVisible={IsModalRemove} onclickCan={handleOncancelRemove} onclickDel={handleRemoveProduct} />}
+      {IsModalRemoveVariants && <FormDel isVisible={IsModalRemoveVariants} onclickCan={handleOncancelRemoveVariants} onclickDel={handleRemoveVariants} />}
     </div>
   );
 };

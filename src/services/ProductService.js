@@ -74,3 +74,25 @@ export const updateProduct = async (productId, productData) => {
     }
 };
 
+export const deleteProduct = async (productId) => {
+    try {
+        const response = await axiosInstance.delete(`/${productId}/delete_product`); // gửi yêu cầu delete
+        return response.data;
+    } catch (error) {
+        console.error('Error while removing product:', error.response.data);
+        throw error;
+    }
+};
+
+export const deleteVariants = async (variantId, productId) => {
+    try {
+        const response = await axiosInstance.delete(`/${productId}/variants/${variantId}`); // gửi yêu cầu delete
+        return response.data;
+    } catch (error) {
+        console.error('Error while removing variants:', error);
+        throw error;
+    }
+};
+
+
+

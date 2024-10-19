@@ -7,11 +7,14 @@ import CategoryManager from '../CategoryManager/CategoryManager';
 import ProductManager from '../ProductsManager/ProductManager';
 import BillManager from '../BilManager/BillManager';
 import AddressManager from '../AddressManager/AddressManager';
+import ReviewManager from '../ReviewManager/ReviewManager';
 import { useNavigate, useLocation } from 'react-router-dom';
+
 
 function Home() {
   const location = useLocation();
   const [selectedSidebarItem, setSelectedSidebarItem] = useState('item1');
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Kiểm tra nếu có state từ màn hình khác
@@ -24,24 +27,26 @@ function Home() {
     setSelectedSidebarItem(itemId);
   };
 
-  const navigate = useNavigate();
+const handleLogout = async () => {
+    const token = localStorage.getItem('token');
+    console.log('Token:', token); // Log token để kiểm tra
 
-  const handleLogout = async () => {
     try {
-      await fetch('http://localhost:3000/v1/auth/logout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
+        await fetch('http://localhost:3000/v1/auth/logout', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`, // Đảm bảo token được thêm vào
+            },
+        });
 
-      localStorage.removeItem('token');
-      navigate('/login');
+        localStorage.removeItem('token');
+        navigate('/login');
     } catch (error) {
-      console.error('Đăng xuất thất bại:', error);
+        console.error('Đăng xuất thất bại:', error);
     }
-  };
+};
+
 
   const getContent = (itemId) => {
     switch (itemId) {
@@ -57,6 +62,8 @@ function Home() {
         return <BillManager />;
       case 'item5':
         return <AddressManager />;
+        case 'item6':
+          return <ReviewManager />;
       default:
         return 'Không tìm thấy nội dung';
     }
@@ -106,7 +113,17 @@ function Home() {
             >
               Quản lý địa chỉ
             </li>
+            <li
+              className={selectedSidebarItem === 'item6' ? 'active' : ''}
+              onClick={() => handleSidebarItemClick('item6')}
+            >
+              Quản lý đánh giá
+            </li>
           </ul>
+          {/* Nút đăng xuất */}
+          <button className="logout-button" onClick={handleLogout}>
+            Đăng xuất
+          </button>
         </div>
         <div className="container">
           <div className="content">

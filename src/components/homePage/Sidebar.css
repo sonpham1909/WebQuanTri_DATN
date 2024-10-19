@@ -49,19 +49,15 @@
     font-size: 20px;
 }
 .logout-button {
-    background-color: #ff4c4c; /* Màu nền đỏ */
-    color: white; /* Màu chữ trắng */
-    border: none; /* Không có đường viền */
-    border-radius: 5px; /* Bo tròn góc */
-    padding: 10px 15px; /* Khoảng cách bên trong */
-    font-size: 16px; /* Kích thước chữ */
-    cursor: pointer; /* Hiển thị con trỏ tay khi hover */
-    transition: background-color 0.3s ease; /* Hiệu ứng chuyển đổi màu nền */
+    margin-top: 20px;
+    padding: 10px 20px;
+    background-color: #f44336; /* Red */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
   }
   
   .logout-button:hover {
-    background-color: #ff1a1a; /* Màu nền khi hover */
+    background-color: #c62828; /* Darker red */
   }
-  
-  
-  

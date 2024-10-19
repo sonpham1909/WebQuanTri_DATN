@@ -19,20 +19,28 @@ const Login = () => {
         username,
         password
       });
-      // Lưu token hoặc xử lý response tại đây
-      console.log(response.data);
-      // Ví dụ: Lưu token vào localStorage
+      
+      // Kiểm tra phản hồi từ máy chủ
+      console.log('Login Response:', response.data);
+      
+      // Lưu token vào localStorage
       localStorage.setItem('token', response.data.accessToken);
-
+      
+      // Lưu userId vào localStorage và trạng thái
+      const userId = response.data._id; // Đảm bảo rằng _id là trường đúng
+      localStorage.setItem('userId', userId); // Lưu userId vào localStorage
+      
       setState((prevState) => ({
         ...prevState,
-        user: { username: response.data.username, avatar: response.data.avatar } // Thay đổi theo cấu trúc dữ liệu của bạn
+        user: { _id: userId, username: response.data.username, avatar: response.data.avatar }
       }));
+
       setError(null);
       alert('Login Success');
       navigate('/Home');
 
     } catch (error) {
+      console.error('Login error:', error);
       setError('Invalid username or password');
     }
   };
@@ -40,7 +48,6 @@ const Login = () => {
   return (
     <div className='container'>
       <div className="login-container">
-
         <img src="logoShopHorizal.png" alt="Logo" style={{ width: 200, height: 200 }} />
         <h2 className='title'>Login with admin</h2>
         {error && <p style={{ color: 'red' }}>{error}</p>}
@@ -64,7 +71,7 @@ const Login = () => {
             />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <button type="submit" >Login</button>
+            <button type="submit">Login</button>
           </div>
         </form>
       </div>

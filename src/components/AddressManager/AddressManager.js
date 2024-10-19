@@ -22,18 +22,20 @@ const AddressManager = () => {
     const [newAddress, setNewAddress] = useState({ city: '', district: '', ward: '', street: '', notes: '' });
     const [editAddressIndex, setEditAddressIndex] = useState(null);
 
-    const fetchUsers = async () => {
-        try {
-            const data = await getAllUsers();
-            const filteredUsers = data.filter(user => !user.admin);
-            setUsers(filteredUsers);
-        } catch (error) {
-            console.error('Failed to fetch users', error);
-            notification.error({ message: 'Không thể tải danh sách người dùng. Vui lòng thử lại.' });
-        } finally {
-            setLoading(false);
-        }
-    };
+const fetchUsers = async () => {
+    try {
+        const data = await getAllUsers();
+        // Filter users who have "user" in their roles array
+        const filteredUsers = data.filter(user => user.roles.includes("user"));
+        setUsers(filteredUsers);
+    } catch (error) {
+        console.error('Failed to fetch users', error);
+        notification.error({ message: 'Không thể tải danh sách người dùng. Vui lòng thử lại.' });
+    } finally {
+        setLoading(false);
+    }
+};
+
 
     const fetchAddresses = async () => {
         try {

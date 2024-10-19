@@ -1,39 +1,75 @@
-import React, { useState } from 'react';
-import { Table, Tag } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Button, Input, Table, Tag } from 'antd';
+import { getAllOrder } from '../../services/OrderService';
+import LoadingCo from '../loading/loading';
+import { SearchOutlined } from '@ant-design/icons';
+import CreateOrderForm from './Create_Order';
 
 // Dữ liệu mẫu
-const sampleOrders = [
-  { _id: '1', orderCode: 'DH001', customerName: 'Nguyễn Văn A', totalPrice: 1500000, status: 'Đang chờ xác nhận' },
-  { _id: '2', orderCode: 'DH002', customerName: 'Trần Thị B', totalPrice: 2000000, status: 'Đang chờ shipper' },
-  { _id: '3', orderCode: 'DH003', customerName: 'Lê Văn C', totalPrice: 3000000, status: 'Đang giao hàng' },
-  { _id: '4', orderCode: 'DH004', customerName: 'Phạm Thị D', totalPrice: 5000000, status: 'Đã nhận hàng' },
-  { _id: '5', orderCode: 'DH005', customerName: 'Đỗ Văn E', totalPrice: 800000, status: 'Đã hủy' },
-  { _id: '6', orderCode: 'DH006', customerName: 'Nguyễn Thị F', totalPrice: 1200000, status: 'Đang chờ xác nhận' },
-  { _id: '7', orderCode: 'DH007', customerName: 'Trần Văn G', totalPrice: 900000, status: 'Đang chờ shipper' },
-  { _id: '8', orderCode: 'DH008', customerName: 'Hoàng Thị H', totalPrice: 2500000, status: 'Đang giao hàng' },
-  { _id: '9', orderCode: 'DH009', customerName: 'Nguyễn Văn I', totalPrice: 1800000, status: 'Đã nhận hàng' },
-  { _id: '10', orderCode: 'DH010', customerName: 'Phạm Thị K', totalPrice: 4000000, status: 'Đã hủy' },
-];
+
 
 const OrderManager = () => {
-  const [orders] = useState(sampleOrders);
+
+
+  const [orders, setorders] = useState([]);
+  const [loading, setloading] = useState(false);
+  const [IsVisitModalCreate, seTIsVisitModalCreate] = useState(false);
+
+  const fetchOrder = async () => {
+    setloading(true);
+
+    try {
+      const res = await getAllOrder();
+      setorders(res);
+      setloading(false);
+    } catch (error) {
+      console.error('Error fetching order', error);
+      setloading(false);
+
+    }
+
+  }
+
+  useEffect(() => {
+    fetchOrder();
+
+  }, []);
+
+  const handleCreateOrder = async (newOrder) => {
+    // Nếu cần, bạn có thể cập nhật orders trực tiếp
+    // Hoặc chỉ cần gọi lại fetchOrder
+    await fetchOrder(); // Gọi hàm fetchOrder để lấy lại danh sách đơn hàng mới
+    seTIsVisitModalCreate(false);
+};
+
+
 
   // Cột cho bảng
   const columns = [
     {
       title: 'Mã đơn hàng',
-      dataIndex: 'orderCode',
-      key: 'orderCode',
+      dataIndex: '_id',
+      key: '_id',
     },
     {
       title: 'Tên khách hàng',
-      dataIndex: 'customerName',
-      key: 'customerName',
+      dataIndex: 'full_name',
+      key: 'full_name',
+    },
+    {
+      title: 'email khách hàng',
+      dataIndex: 'email',
+      key: 'email',
+    },
+    {
+      title: 'Số điện thoại người nhận',
+      dataIndex: 'recipientPhone',
+      key: 'recipientPhone',
     },
     {
       title: 'Tổng giá tiền',
-      dataIndex: 'totalPrice',
-      key: 'totalPrice',
+      dataIndex: 'total_amount',
+      key: 'total_amount',
       render: (price) => `${price.toLocaleString('vi-VN')} VND`,
     },
     {
@@ -43,7 +79,7 @@ const OrderManager = () => {
       render: (status) => {
         let color;
         switch (status) {
-          case 'Đang chờ xác nhận':
+          case 'pending':
             color = 'blue';
             break;
           case 'Đang chờ shipper':
@@ -55,7 +91,7 @@ const OrderManager = () => {
           case 'Đã nhận hàng':
             color = 'green';
             break;
-          case 'Đã hủy':
+          case 'canceled':
             color = 'red';
             break;
           default:
@@ -66,10 +102,34 @@ const OrderManager = () => {
     },
   ];
 
+  const handleOncancleCreate = ()=>{
+    seTIsVisitModalCreate(false);
+  }
+
+  if (loading) {
+    return <LoadingCo />
+  }
+
   return (
     <div>
-      <h2>Danh sách đơn hàng</h2>
+      <Input
+        placeholder="Tìm kiếm đơn hàng"
+
+        prefix={<SearchOutlined />}
+        style={{ marginBottom: '20px', width: '300px' }}
+      />
+      <div className="headerPage">
+        <h3 className="titlepage">Quản lý đơn hàng</h3>
+        <p>Tổng: {orders.length} đơn hàng</p>
+        <Button className="buttonAdd"
+          onClick={() => seTIsVisitModalCreate(true)}
+        >Thêm đơn hàng mới mới</Button>
+      </div>
+
       <Table dataSource={orders} columns={columns} rowKey="_id" />
+
+      //create orders
+      <CreateOrderForm isVisitable={IsVisitModalCreate} onCancle={handleOncancleCreate} onCreate={handleCreateOrder}/>
     </div>
   );
 };

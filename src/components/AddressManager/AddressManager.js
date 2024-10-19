@@ -25,7 +25,7 @@ const AddressManager = () => {
     const fetchUsers = async () => {
         try {
             const data = await getAllUsers();
-            const filteredUsers = data.filter(user => !user.admin);
+            const filteredUsers = data.filter(user => user.roles.includes("user"));
             setUsers(filteredUsers);
         } catch (error) {
             console.error('Failed to fetch users', error);

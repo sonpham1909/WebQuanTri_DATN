@@ -94,5 +94,16 @@ export const deleteVariants = async (variantId, productId) => {
     }
 };
 
+export const searchProducts = async (searchTerm) => { // Đổi tên hàm
+    try {
+        const response = await axiosInstance.get('/search_products', {
+            params: { keyword: searchTerm }
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Error searching products:", error.response.data);
+        throw error;
+    }
+};
 
 

@@ -270,6 +270,7 @@ const fetchUsers = async () => {
                 prefix={<SearchOutlined />}
                 style={{ marginBottom: '20px', width: '300px' }}
             />
+               <h3 className="titlepage">Quản lý địa chỉ</h3>
             <Table
                 columns={columns}
                 dataSource={searchText ? userSearch : users}

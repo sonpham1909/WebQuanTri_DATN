@@ -66,3 +66,14 @@ export const deleteAddress = async (addressId) => {
         throw error;
     }
 };
+
+export const getAddressByUserID = async (userId) => {
+    try {
+        const response = await axiosInstance.post(`/get_address_by_user`, {userId});
+        return response.data;
+    } catch (error) {
+        console.error("Error deleting address:", error.response.data);
+        throw error;
+    }
+};
+

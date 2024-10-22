@@ -1,28 +1,33 @@
-import React, { useEffect, useState } from 'react';
-import { addProduct, addVariantToProduct, deleteProduct, deleteVariants, getAllProducts, getProductById, updateProduct } from '../../services/ProductService';
-import { Button, Table, Modal, Input, Form, Upload, message } from 'antd';
+import React, { useCallback, useEffect, useState } from 'react';
+import { addProduct, addVariantToProduct, deleteProduct, deleteVariants, getAllProducts, getProductById, searchProducts, updateProduct } from '../../services/ProductService';
+import { Button, Table, Modal, Input, Form, Upload, message, Spin } from 'antd';
 import './index.css';
 import LoadingCo from '../loading/loading';
 import Icon, { DeleteOutlined, SearchOutlined, UploadOutlined } from '@ant-design/icons';
 import FormDel from '../ActionForms/FormDel';
-import { listItemSecondaryActionClasses } from '@mui/material';
+import debounce from 'lodash/debounce';
+
 
 const ProductManager = () => {
   const [form] = Form.useForm();
   const [product, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingAc, setLoadingAc] = useState(false);
   const [isModalVisibleAdd, setIsModalVisibleAdd] = useState(false);
   const [isModalVisibleUpdateImage, setIsModalVisibleUpdateImage] = useState(false);
   const [currentProductImages, setCurrentProductImages] = useState([]);
   const [newImages, setNewImages] = useState([]); // State để lưu trữ hình ảnh mới
   const [IsModalRemove, setIsModalRemove] = useState(false);
   const [IsModalRemoveVariants, seTIsModalRemoveVariants] = useState(false);
+  const [productSearch, setProductSearch] = useState([]);
+
+  const [searchText, setSearchText] = useState('');
 
   const [ImageToDel, setImageToDel] = useState([]);
   const [Productss, setProductss] = useState([]);
   const [idDel, setIdDel] = useState('');
   const [idVariant, setIdVariant] = useState('');
   const [idPro, setIdPro] = useState('');
+  const [loading, setLoading] = useState(false);
 
 
   // Quản lý biến thể thông qua state riêng lẻ
@@ -56,11 +61,51 @@ const ProductManager = () => {
     setImageToDel(imageToDelete);
   };
 
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  useEffect(() => {
+    if (Productss) {
+      form.setFieldsValue({
+        nameU: Productss.name,
+        materialU: Productss.material,
+        descriptionU: Productss.description,
+      });
+    }
+  }, [Productss, form]);
+
   const handleImageChange = (info) => {
     if (info.fileList) {
       setNewImages(info.fileList.map(file => file.originFileObj)); // Lưu hình ảnh mới
     }
   };
+
+  const fetchProductsSearch = async (searchText) => {
+    try {
+      const data = await searchProducts(searchText);
+
+      setProductSearch(data); // Lưu dữ liệu tìm kiếm vào state
+      // Log dữ liệu tìm kiếm
+    } catch (error) {
+      console.error('Failed to fetch search products', error);
+    } finally {
+      setLoading(false);
+    }
+
+  };
+
+  const debouncedFetchProductsSearch = useCallback(debounce(fetchProductsSearch, 400), []);
+
+  const handleSearch = (e) => {
+    const value = e.target.value.toLowerCase();  // Chuyển text thành chữ thường
+    setSearchText(value);
+    debouncedFetchProductsSearch(value);
+  }
+
+  if (loading) {
+    return <LoadingCo />;
+  }
 
   const handleProductClick = async (productId) => {
     try {
@@ -81,25 +126,14 @@ const ProductManager = () => {
     setVariants([]);
   }
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  useEffect(() => {
-    if (Productss) {
-      form.setFieldsValue({
-        nameU: Productss.name,
-        materialU: Productss.material,
-        descriptionU: Productss.description,
-      });
-    }
-  }, [Productss, form]);
+ 
 
   const handleSubmit = async (values) => {
+    setLoadingAc(true);
     try {
       const formData = new FormData();
       formData.append('name', values.name);
-      formData.append('category', values.category);
+
       formData.append('material', values.material);
       formData.append('description', values.description);
 
@@ -110,11 +144,14 @@ const ProductManager = () => {
 
       await addProduct(formData);
       alert('Product added successfully!');
+      form.resetFields();
       setIsModalVisibleAdd(false);
       fetchProducts();
     } catch (error) {
       console.error('Error adding product:', error);
       alert('Failed to add product');
+    } finally {
+      setLoadingAc(false);
     }
   };
 
@@ -308,9 +345,9 @@ const ProductManager = () => {
 
   const handleRemoveVariants = async () => {
     try {
-      await deleteVariants(idVariant,selectedProductId);
+      await deleteVariants(idVariant, selectedProductId);
       message.success('Xóa biến thể thành công');
-     
+
       setVariants(prevVariants => prevVariants.filter(variant => variant._id !== idVariant));
       setIdVariant('');
       seTIsModalRemoveVariants(false);
@@ -335,6 +372,8 @@ const ProductManager = () => {
     <div className="container">
       <Input
         placeholder="Tìm kiếm sản phẩm..."
+        value={searchText}
+        onChange={handleSearch}
         prefix={<SearchOutlined />}
         style={{ marginBottom: 16, width: 300 }}
       />
@@ -346,7 +385,7 @@ const ProductManager = () => {
 
       <Table
         className="table"
-        dataSource={product}
+        dataSource={productSearch && productSearch.length > 0 ? productSearch : product}
         columns={columns}
         rowKey="_id"
         pagination={{
@@ -362,6 +401,7 @@ const ProductManager = () => {
         onCancel={() => setIsModalVisibleAdd(false)}
         footer={null}
       >
+        {loadingAc && <Spin />}
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
           <Form.Item label="Tên sản phẩm" name="name" rules={[{ required: true, message: 'Vui lòng nhập tên sản phẩm!' }]}>
             <Input required />
@@ -396,6 +436,8 @@ const ProductManager = () => {
         }}
         footer={null}
       >
+
+        <h5>Id sản phẩm: {Productss._id}</h5>
         <h4>Hình ảnh hiện tại</h4>
         <div style={{ display: 'flex', flexWrap: 'wrap' }}>
           {currentProductImages.map((image, index) => (

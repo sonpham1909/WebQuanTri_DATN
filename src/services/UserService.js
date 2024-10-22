@@ -23,7 +23,7 @@ axiosInstance.interceptors.request.use((config) => {
 // Lấy danh sách người dùng
 export const getAllUsers = async () => {
     try {
-        console.log("Token being sent:", getToken());
+        
         const response = await axiosInstance.get();
         return response.data;
     } catch (error) {

@@ -274,6 +274,7 @@ const CreateOrderForm = ({ onCreate, isVisitable, onCancle }) => {
             width={'80%'}
 
         >
+            <h2>Tạo đơn hàng mới</h2>
             <Form
                 form={form}
                 layout="vertical"

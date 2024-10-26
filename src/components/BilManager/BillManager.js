@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Input, Table, Tag } from 'antd';
+import { Button, Input, Space, Table, Tag } from 'antd';
 import { getAllOrder } from '../../services/OrderService';
 import LoadingCo from '../loading/loading';
 import { SearchOutlined } from '@ant-design/icons';
@@ -105,6 +105,24 @@ const OrderManager = () => {
   const handleOncancleCreate = ()=>{
     seTIsVisitModalCreate(false);
   }
+  const statusList = [
+    { label: 'Đang chờ xử lý', color: 'blue' },
+    { label: 'Đang chờ lấy hàng', color: 'orange' },
+    { label: 'Đang giao hàng', color: 'purple' },
+    { label: 'Đã giao hàng', color: 'green' },
+    { label: 'Đã hủy', color: 'red' },
+    { label: 'Đã thanh toán', color: 'gold' }
+  ];
+  
+  
+    const [currentStatus, setCurrentStatus] = useState("Đang chờ xử lý");
+  
+    const handleClick = (status) => {
+      setCurrentStatus(status.label);
+      // Xử lý logic khi nhấn nút, ví dụ: gọi API để cập nhật trạng thái
+      console.log('Selected status:', status.label);
+    };
+  
 
   if (loading) {
     return <LoadingCo />
@@ -121,14 +139,33 @@ const OrderManager = () => {
       <div className="headerPage">
         <h3 className="titlepage">Quản lý đơn hàng</h3>
         <p>Tổng: {orders.length} đơn hàng</p>
-        <Button className="buttonAdd"
+        <Button
+        style={{width:180}}
+         className="buttonAdd"
           onClick={() => seTIsVisitModalCreate(true)}
-        >Thêm đơn hàng mới mới</Button>
+        >Tạo đơn hàng mới mới</Button>
       </div>
+      
+      <div style={{ display: 'flex', justifyContent: 'left', gap: '10px' }}> {/* Flexbox để căn ngang */}
+        {statusList.map((status) => (
+          <Button
+            key={status.label}
+            type={currentStatus === status.label ? 'primary' : 'default'}
+            onClick={() => handleClick(status)}
+            style={{ backgroundColor: currentStatus === status.label ? status.color : '',
+              width:'15%'
+             }}
+          >
+            {status.label}
+          </Button>
+        ))}
+      </div>
+      {currentStatus && <p>Trạng thái hiện tại: {currentStatus}</p>}
+    
 
       <Table dataSource={orders} columns={columns} rowKey="_id" />
 
-      //create orders
+      
       <CreateOrderForm isVisitable={IsVisitModalCreate} onCancle={handleOncancleCreate} onCreate={handleCreateOrder}/>
     </div>
   );

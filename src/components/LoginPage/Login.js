@@ -15,35 +15,40 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://localhost:3000/v1/auth/login', {
-        username,
-        password
-      });
-      
-      // Kiểm tra phản hồi từ máy chủ
-      console.log('Login Response:', response.data);
-      
-      // Lưu token vào localStorage
-      localStorage.setItem('token', response.data.accessToken);
-      
-      // Lưu userId vào localStorage và trạng thái
-      const userId = response.data._id; // Đảm bảo rằng _id là trường đúng
-      localStorage.setItem('userId', userId); // Lưu userId vào localStorage
-      
-      setState((prevState) => ({
-        ...prevState,
-        user: { _id: userId, username: response.data.username, avatar: response.data.avatar }
-      }));
+        const response = await axios.post(
+            'http://localhost:3000/v1/auth/login',
+            {
+                username,
+                password
+            },
+            { withCredentials: true } // Đảm bảo rằng cookie được gửi
+        );
 
-      setError(null);
-      alert('Login Success');
-      navigate('/Home');
+        // Kiểm tra phản hồi từ máy chủ
+        console.log('Login Response:', response.data);
+
+        // Lưu token vào localStorage
+        localStorage.setItem('token', response.data.accessToken);
+
+        // Lưu userId vào localStorage và trạng thái
+        const userId = response.data._id; // Đảm bảo rằng _id là trường đúng
+        localStorage.setItem('userId', userId); // Lưu userId vào localStorage
+
+        setState((prevState) => ({
+            ...prevState,
+            user: { _id: userId, username: response.data.username, avatar: response.data.avatar }
+        }));
+
+        setError(null);
+        alert('Login Success');
+        navigate('/Home');
 
     } catch (error) {
-      console.error('Login error:', error);
-      setError('Invalid username or password');
+        console.error('Login error:', error);
+        setError('Invalid username or password');
     }
-  };
+};
+
 
   return (
     <div className='container'>

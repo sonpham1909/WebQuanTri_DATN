@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Table, Input, Modal, Button } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
-import { getAllProducts } from '../../services/ProductService';
+import { getAllProducts, } from '../../services/ProductService';
 import { getAllReviews } from '../../services/ReviewServices';
 import { getAllUsers } from '../../services/UserService';
 import { addResponse, getAllResponses, deleteResponse, updateResponse } from '../../services/ResponseReviewServices';
@@ -20,6 +20,7 @@ const ReviewManager = () => {
   const [isResponseModalVisible, setIsResponseModalVisible] = useState(false); // Trạng thái modal phản hồi
   const [newResponseText, setNewResponseText] = useState(''); // Nội dung phản hồi mới cho sửa
   const [isConfirmDeleteVisible, setIsConfirmDeleteVisible] = useState(false); // Modal xác nhận xóa
+  const [searchTerm, setSearchTerm] = useState(''); // Trạng thái từ khóa tìm kiếm
 
   const pageSize = 5; // Số mục trên mỗi trang
 
@@ -145,7 +146,10 @@ const ReviewManager = () => {
       setNewResponseText(''); // Reset nội dung phản hồi mới
     }
   };
-
+  const handleSearch = (e) => {
+    setSearchTerm(e.target.value); // Cập nhật từ khóa tìm kiếm
+  };
+  
   // Định nghĩa các cột cho bảng sản phẩm
   const columns = [
     {
@@ -184,27 +188,32 @@ const ReviewManager = () => {
 
   return (
     <div className="container">
-      <Input
-        placeholder="Tìm kiếm sản phẩm..."
-        prefix={<SearchOutlined />}
-        style={{ marginBottom: 16, width: 300 }}
-      />
+<Input
+  placeholder="Tìm kiếm sản phẩm..."
+  prefix={<SearchOutlined />}
+  style={{ marginBottom: 16, width: 300 }}
+  onChange={handleSearch} // Gọi hàm tìm kiếm khi thay đổi
+/>
+
       <div className="headerPage">
         <h3 className="titlepage">Quản lý sản phẩm</h3>
         <p>Tổng: {products.length} sản phẩm</p>
       </div>
 
       <Table
-        className="table"
-        dataSource={products}
-        columns={columns}
-        rowKey="_id"
-        pagination={{
-          pageSize,
-          current: currentPage,
-          onChange: (page) => setCurrentPage(page),
-        }}
-      />
+  className="table"
+  dataSource={products.filter(product => 
+    product.name.toLowerCase().includes(searchTerm.toLowerCase())
+  )} // Lọc sản phẩm theo từ khóa tìm kiếm
+  columns={columns}
+  rowKey="_id"
+  pagination={{
+    pageSize,
+    current: currentPage,
+    onChange: (page) => setCurrentPage(page),
+  }}
+/>
+
 
       {/* Modal hiển thị đánh giá */}
       <Modal

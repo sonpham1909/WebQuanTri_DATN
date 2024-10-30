@@ -1,11 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { addProduct, addVariantToProduct, deleteProduct, deleteVariants, getAllProducts, getProductById, searchProducts, updateProduct } from '../../services/ProductService';
-import { Button, Table, Modal, Input, Form, Upload, message, Spin } from 'antd';
+import { Button, Table, Modal, Input, Form, Upload, message, Spin, Select, InputNumber } from 'antd';
 import './index.css';
 import LoadingCo from '../loading/loading';
-import Icon, { DeleteOutlined, SearchOutlined, UploadOutlined } from '@ant-design/icons';
+import Icon, { DeleteFilled, DeleteOutlined, SearchOutlined, UploadOutlined } from '@ant-design/icons';
 import FormDel from '../ActionForms/FormDel';
 import debounce from 'lodash/debounce';
+import { CreateVariant, getVariantsByProductId } from '../../services/VariantService';
+import { Option } from 'antd/es/mentions';
 
 
 const ProductManager = () => {
@@ -42,6 +44,54 @@ const ProductManager = () => {
   const [selectedProductId, setSelectedProductId] = useState(null);
   const pageSize = 5;
 
+  const [fileList, setFileList] = useState([]);
+
+  const handleUpload = (info) => {
+    setFileList(info.fileList.slice(-1)); // Giới hạn chỉ 1 ảnh
+  };
+
+  const onFinish = async (values) => {
+    // Convert image file to URL
+    try {
+      const image = fileList[0]?.originFileObj;
+
+
+      const sizes = values.sizes; // Giả sử sizes là mảng từ form
+
+      // Kiểm tra và định dạng lại dữ liệu
+      const variantData = {
+        product_id: selectedProductId,
+        color: values.color,
+        color_code: values.color_code,
+        sizes: sizes, // Đảm bảo đây là mảng đối tượng
+        image: image // Tệp ảnh
+      };
+      console.log(Array.isArray(variantData.sizes)); // Kiểm tra xem sizes có phải là mảng không
+
+
+      console.log(variantData);
+      const formData = new FormData();
+      formData.append('product_id', variantData.product_id);
+      formData.append('color', variantData.color);
+      formData.append('color_code', variantData.color_code);
+      variantData.sizes.forEach(size => {
+        formData.append('sizes[]', JSON.stringify(size)); // Chuyển từng size thành chuỗi JSON
+
+      });
+      formData.append('imageUrls', variantData.image);
+      await CreateVariant(formData);
+      message.success('Thêm biến thể thành công');
+      form.resetFields();
+      setSelectedProductId(null);
+      setIsModalVisibleVariant(false);
+    } catch (error) {
+      console.error('Failed to create variants', error);
+      message.error('Thêm biến thể không thành công')
+    }
+
+
+  };
+
   const fetchProducts = async () => {
     try {
       const data = await getAllProducts();
@@ -71,6 +121,7 @@ const ProductManager = () => {
         nameU: Productss.name,
         materialU: Productss.material,
         descriptionU: Productss.description,
+        priceU: Productss.price
       });
     }
   }, [Productss, form]);
@@ -110,13 +161,15 @@ const ProductManager = () => {
   const handleProductClick = async (productId) => {
     try {
 
-      const product = await getProductById(productId);
-      setIsModalVisibleVariant(true)
+      const variants = await getVariantsByProductId(productId);
+      setIsModalVisibleVariant(true);
+      console.log(variants);
+
       setSelectedProductId(productId);
-      setVariants(product.variants || []); // Đảm bảo đang set đúng
+      setVariants(variants || []); // Đảm bảo đang set đúng
 
       // Log biến thể ngay sau khi set
-      console.log('Current variants after set:', variants); // Có thể vẫn trả về giá trị cũ
+
     } catch (error) {
       console.error('Failed to fetch product:', error);
     }
@@ -126,7 +179,7 @@ const ProductManager = () => {
     setVariants([]);
   }
 
- 
+
 
   const handleSubmit = async (values) => {
     setLoadingAc(true);
@@ -136,6 +189,7 @@ const ProductManager = () => {
 
       formData.append('material', values.material);
       formData.append('description', values.description);
+      formData.append('price', values.price);
 
       const imageFiles = values.imageUrls.fileList;
       imageFiles.forEach(file => {
@@ -200,6 +254,7 @@ const ProductManager = () => {
 
       formData.append('material', updatedData.materialU);
       formData.append('description', updatedData.descriptionU);
+      formData.append('price', updatedData.priceU);
 
       // Kiểm tra nếu có hình ảnh mới
       const allImages = [...newImages];
@@ -306,8 +361,8 @@ const ProductManager = () => {
     },
     {
       title: 'Giá',
-      dataIndex: 'lowestPrice',
-      key: 'lowestPrice',
+      dataIndex: 'price',
+      key: 'price',
       render: (price) => {
         if (price) {
           // Định dạng giá theo VND
@@ -419,6 +474,10 @@ const ProductManager = () => {
             <Input.TextArea required />
           </Form.Item>
 
+          <Form.Item label="Giá của sản phẩm" name="price" rules={[{ required: true, message: 'Vui lòng nhập mô tả!' }]}>
+            <Input type='number' required />
+          </Form.Item>
+
           <Form.Item>
             <Button type="primary" htmlType="submit">Thêm sản phẩm</Button>
           </Form.Item>
@@ -485,6 +544,9 @@ const ProductManager = () => {
           <Form.Item label="Mô tả" name="descriptionU" rules={[{ required: true, message: 'Vui lòng nhập mô tả!' }]}>
             <Input.TextArea required />
           </Form.Item>
+          <Form.Item label="Giá của sản phẩm" name="priceU" rules={[{ required: true, message: 'Vui lòng nhập mô tả!' }]}>
+            <Input type='number' required />
+          </Form.Item>
           <Form.Item>
             <Button type="primary" htmlType="submit">Cập nhật sản phẩm</Button>
           </Form.Item>
@@ -498,46 +560,126 @@ const ProductManager = () => {
           setIsModalVisibleVariant(false);
           handlresetVariant();
           setVariants([]);
+          setFileList([]);
         }}
         footer={null}
+        width={'80%'}
       >
-        <Table
-          dataSource={variants}
-          columns={[
-            { title: 'Size', dataIndex: 'size', key: 'size' },
-            { title: 'Màu sắc', dataIndex: 'color', key: 'color' },
-            { title: 'Số lượng', dataIndex: 'quantity', key: 'quantity' },
-            { title: 'Giá', dataIndex: 'price', key: 'price' },
-            {
-              title: 'Hành động', render: (text, record) => (
-                <div>
-                  <Button onClick={() => handleClickRemoveVariants(record._id)}><DeleteOutlined /></Button>
 
-                </div>
-              )
+        <div
+          style={{
+            display: 'flex',               // Đặt display là flex
+            flexDirection: 'row',           // Căn theo hàng ngang
+            flexWrap: 'wrap',               // Tự động xuống dòng khi không đủ không gian
+            gap: 10,
+            alignItems: 'center',           // Căn giữa theo chiều dọc
+            padding: 10
+          }}
+        >
+          {variants.map(variant => (
+            <div
+              style={{
+                border: `1px solid ${variant.color_code || 'green'}`, // Đặt border với màu của variant
+                borderRadius: 10,
+                width: '25%',                // Chiếm 25% chiều rộng
+                marginBottom: 10,
+                padding:10             // Khoảng cách giữa các item
+              }}
+              key={variant._id}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <p>Màu sắc: {variant.color} {variant.color_code}</p>
+                <DeleteFilled />
+              </div>
+              <img src={variant.image} alt={`Sản phẩm màu ${variant.color}`} width="100" />
+              <p>ID sản phẩm: {variant.product_id}</p>
+              <p>Kích thước và số lượng tồn kho:</p>
+              <Table dataSource={variant.sizes} rowKey="_id">
+                <Table.Column title="Size" dataIndex="size" key="size" />
+                <Table.Column title="Số lượng" dataIndex="quantity" key="quantity" />
+              </Table>
+            </div>
+          ))}
+        </div>
 
 
-            }
-          ]}
-          rowKey="_id"
-          pagination={false}
-        />
-        <Form layout="vertical" onFinish={handleVariantSubmit}>
-          <Form.Item label="Kích thước" rules={[{ required: true, message: 'Vui lòng nhập kích thước!' }]}>
-            <Input value={size} onChange={(e) => setSize(e.target.value)} required />
+        <Form form={form} onFinish={onFinish} layout="vertical">
+
+
+          <Form.Item
+            name="color"
+            label="Color"
+            rules={[{ required: true, message: 'Vui lòng chọn màu sắc' }]}
+          >
+            <Input />
           </Form.Item>
-          <Form.Item label="Màu sắc" rules={[{ required: true, message: 'Vui lòng nhập màu sắc!' }]}>
-            <Input value={color} onChange={(e) => setColor(e.target.value)} required />
+
+          <Form.Item
+            name="color_code"
+            label="Color Code"
+            rules={[{ required: true, message: 'Vui lòng nhập mã màu' }]}
+          >
+            <Input />
           </Form.Item>
-          <Form.Item label="Số lượng" rules={[{ required: true, message: 'Vui lòng nhập số lượng!' }]}>
-            <Input type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} required />
+
+          <Form.Item
+            name="sizes"
+            label="Sizes"
+            rules={[{ required: true, message: 'Vui lòng nhập size và số lượng' }]}
+          >
+            <Form.List name="sizes">
+              {(fields, { add, remove }) => (
+                <>
+                  {fields.map((field) => (
+                    <Form.Item key={field.key}>
+                      <Input.Group compact>
+                        <Form.Item
+                          {...field}
+                          name={[field.name, 'size']}
+                          rules={[{ required: true, message: 'Nhập kích thước' }]}
+                        >
+                          <Input placeholder="Size" style={{ width: '50%' }} />
+                        </Form.Item>
+                        <Form.Item
+                          {...field}
+                          name={[field.name, 'quantity']}
+                          rules={[{ required: true, message: 'Nhập số lượng' }]}
+                        >
+                          <InputNumber placeholder="Số lượng" style={{ width: '50%' }} />
+                        </Form.Item>
+                      </Input.Group>
+                      <Button onClick={() => remove(field.name)} type="dashed">
+                        Xóa Size
+                      </Button>
+                    </Form.Item>
+                  ))}
+                  <Button type="dashed" onClick={() => add()}>
+                    Thêm Size
+                  </Button>
+                </>
+              )}
+            </Form.List>
           </Form.Item>
-          <Form.Item label="Giá" rules={[{ required: true, message: 'Vui lòng nhập giá!' }]}>
-            <Input type="number" value={price} onChange={(e) => setPrice(e.target.value)} required />
+
+          <Form.Item
+            name="image"
+            label="Upload Image"
+            rules={[{ required: true, message: 'Vui lòng tải lên 1 ảnh' }]}
+          >
+            <Upload
+              beforeUpload={() => false}
+              fileList={fileList}
+              onChange={handleUpload}
+              listType="picture"
+              maxCount={1}
+            >
+              <Button icon={<UploadOutlined />}>Tải ảnh lên</Button>
+            </Upload>
           </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit">Thêm biến thể</Button>
-          </Form.Item>
+
+          <Button type="primary" htmlType="submit">
+            Tạo Biến Thể
+          </Button>
         </Form>
       </Modal>
 

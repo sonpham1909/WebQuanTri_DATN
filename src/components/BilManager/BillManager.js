@@ -4,47 +4,49 @@ import { getAllOrder } from '../../services/OrderService';
 import LoadingCo from '../loading/loading';
 import { SearchOutlined } from '@ant-design/icons';
 import CreateOrderForm from './Create_Order';
-
-// Dữ liệu mẫu
-
+import { render } from '@testing-library/react';
 
 const OrderManager = () => {
-
-
-  const [orders, setorders] = useState([]);
-  const [loading, setloading] = useState(false);
-  const [IsVisitModalCreate, seTIsVisitModalCreate] = useState(false);
+  const [allOrders, setAllOrders] = useState([]); // lưu toàn bộ danh sách đơn hàng
+  const [orders, setOrders] = useState([]); // lưu danh sách đơn hàng hiển thị
+  const [loading, setLoading] = useState(false);
+  const [isVisitModalCreate, setIsVisitModalCreate] = useState(false);
+  const [currentStatus, setCurrentStatus] = useState("pending");
 
   const fetchOrder = async () => {
-    setloading(true);
-
+    setLoading(true);
     try {
       const res = await getAllOrder();
-      setorders(res);
-      setloading(false);
+      setAllOrders(res); // lưu toàn bộ dữ liệu đơn hàng vào allOrders
+      const orderFirst = res.filter(order => order.status === "pending");
+      console.log('order pending: ',orderFirst);
+      
+      setOrders(orderFirst);
+     
     } catch (error) {
       console.error('Error fetching order', error);
-      setloading(false);
-
+    } finally {
+      setLoading(false);
     }
-
-  }
+  };
 
   useEffect(() => {
     fetchOrder();
-
+   
   }, []);
 
-  const handleCreateOrder = async (newOrder) => {
-    // Nếu cần, bạn có thể cập nhật orders trực tiếp
-    // Hoặc chỉ cần gọi lại fetchOrder
-    await fetchOrder(); // Gọi hàm fetchOrder để lấy lại danh sách đơn hàng mới
-    seTIsVisitModalCreate(false);
-};
+  const handleCreateOrder = async () => {
+    await fetchOrder();
+    setIsVisitModalCreate(false);
+  };
 
+  const handleClick = (status) => {
+    setCurrentStatus(status.label);
+    const filteredOrders = allOrders.filter(order => order.status === status.label); // Lọc theo trạng thái
+    setOrders(filteredOrders);
+    console.log('Selected status:', status.label);
+  };
 
-
-  // Cột cho bảng
   const columns = [
     {
       title: 'Mã đơn hàng',
@@ -57,7 +59,7 @@ const OrderManager = () => {
       key: 'full_name',
     },
     {
-      title: 'email khách hàng',
+      title: 'Email khách hàng',
       dataIndex: 'email',
       key: 'email',
     },
@@ -99,40 +101,41 @@ const OrderManager = () => {
         }
         return <Tag color={color}>{status}</Tag>;
       },
+      
     },
+    {
+      title:'Xác nhận',
+      render: (text, record) => (
+        <div>
+          <Button>
+            Xác nhận
+          </Button>
+        </div>
+      )
+    }
   ];
 
-  const handleOncancleCreate = ()=>{
-    seTIsVisitModalCreate(false);
-  }
+  const handleOnCancelCreate = () => {
+    setIsVisitModalCreate(false);
+  };
+
   const statusList = [
-    { label: 'Đang chờ xử lý', color: 'blue' },
+    { label: 'pending', color: 'blue' },
     { label: 'Đang chờ lấy hàng', color: 'orange' },
     { label: 'Đang giao hàng', color: 'purple' },
     { label: 'Đã giao hàng', color: 'green' },
-    { label: 'Đã hủy', color: 'red' },
+    { label: 'canceled', color: 'red' },
     { label: 'Đã thanh toán', color: 'gold' }
   ];
-  
-  
-    const [currentStatus, setCurrentStatus] = useState("Đang chờ xử lý");
-  
-    const handleClick = (status) => {
-      setCurrentStatus(status.label);
-      // Xử lý logic khi nhấn nút, ví dụ: gọi API để cập nhật trạng thái
-      console.log('Selected status:', status.label);
-    };
-  
 
   if (loading) {
-    return <LoadingCo />
+    return <LoadingCo />;
   }
 
   return (
     <div>
       <Input
         placeholder="Tìm kiếm đơn hàng"
-
         prefix={<SearchOutlined />}
         style={{ marginBottom: '20px', width: '300px' }}
       />
@@ -140,33 +143,38 @@ const OrderManager = () => {
         <h3 className="titlepage">Quản lý đơn hàng</h3>
         <p>Tổng: {orders.length} đơn hàng</p>
         <Button
-        style={{width:180}}
-         className="buttonAdd"
-          onClick={() => seTIsVisitModalCreate(true)}
-        >Tạo đơn hàng mới mới</Button>
+          style={{ width: 180 }}
+          className="buttonAdd"
+          onClick={() => setIsVisitModalCreate(true)}
+        >
+          Tạo đơn hàng mới
+        </Button>
       </div>
       
-      <div style={{ display: 'flex', justifyContent: 'left', gap: '10px' }}> {/* Flexbox để căn ngang */}
+      <div style={{ display: 'flex', justifyContent: 'left', gap: '10px' }}>
         {statusList.map((status) => (
           <Button
             key={status.label}
             type={currentStatus === status.label ? 'primary' : 'default'}
             onClick={() => handleClick(status)}
-            style={{ backgroundColor: currentStatus === status.label ? status.color : '',
-              width:'15%'
-             }}
+            style={{
+              backgroundColor: currentStatus === status.label ? status.color : '',
+              width: '15%'
+            }}
           >
             {status.label}
           </Button>
         ))}
       </div>
       {currentStatus && <p>Trạng thái hiện tại: {currentStatus}</p>}
-    
 
       <Table dataSource={orders} columns={columns} rowKey="_id" />
 
-      
-      <CreateOrderForm isVisitable={IsVisitModalCreate} onCancle={handleOncancleCreate} onCreate={handleCreateOrder}/>
+      <CreateOrderForm
+        isVisitable={isVisitModalCreate}
+        onCancle={handleOnCancelCreate}
+        onCreate={handleCreateOrder}
+      />
     </div>
   );
 };

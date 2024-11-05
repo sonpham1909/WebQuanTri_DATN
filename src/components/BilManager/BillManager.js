@@ -128,7 +128,7 @@ const OrderManager = () => {
 
       <Table dataSource={orders} columns={columns} rowKey="_id" />
 
-      //create orders
+
       <CreateOrderForm isVisitable={IsVisitModalCreate} onCancle={handleOncancleCreate} onCreate={handleCreateOrder}/>
     </div>
   );

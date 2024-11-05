@@ -43,3 +43,12 @@ export const createOrder = async (orderData) => {
         throw error;
     }
 };
+
+export const getOrderItemByOrderId = async(orderId) => {
+    try {
+        const response = await axiosInstance.get('/')
+    } catch (error) {
+        console.error('Error fetching order items:', error.response ? error.response.data : error.message);
+        throw error;
+    }
+}

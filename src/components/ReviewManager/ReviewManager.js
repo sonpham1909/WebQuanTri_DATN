@@ -228,13 +228,15 @@ const ReviewManager = () => {
                   <strong>{review.userName}</strong>
                   <div>{review.comment}</div>
                   <div><em>{review.rating}/5⭐</em></div>
-                  {review.img && (
-                    <img
-                      src={review.img}
-                      alt="Hình ảnh đánh giá"
-                      style={{ width: '100px', marginTop: '5px', borderRadius: '5px' }}
-                    />
-                  )}
+                  {review.img?.map(img => (
+                    
+                      <img
+                        src={img}
+                        alt="Hình ảnh đánh giá"
+                        style={{ width: '100px', marginTop: '5px', borderRadius: '5px' }}
+                      />
+                   
+                  ))}
 
                   {/* Hiển thị phản hồi dưới đánh giá */}
                   {review.responses.length > 0 && (

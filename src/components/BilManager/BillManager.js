@@ -90,7 +90,7 @@ const OrderManager = () => {
           case 'Đang giao hàng':
             color = 'purple';
             break;
-          case 'Đã nhận hàng':
+          case 'delivered':
             color = 'green';
             break;
           case 'canceled':
@@ -123,7 +123,7 @@ const OrderManager = () => {
     { label: 'pending', color: 'blue' },
     { label: 'Đang chờ lấy hàng', color: 'orange' },
     { label: 'Đang giao hàng', color: 'purple' },
-    { label: 'Đã giao hàng', color: 'green' },
+    { label: 'delivered', color: 'green' },
     { label: 'canceled', color: 'red' },
     { label: 'Đã thanh toán', color: 'gold' }
   ];

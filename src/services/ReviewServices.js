@@ -80,13 +80,3 @@ export const searchReviews = async (searchTerm) => {
     }
 };
 
-// Lấy đánh giá theo ID
-export const getReviewById = async (reviewId) => {
-    try {
-        const response = await axiosInstance.get(`/${reviewId}`);
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching review by ID:", error.response.data);
-        throw error;
-    }
-};

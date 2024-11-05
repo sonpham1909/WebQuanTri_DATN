@@ -1,0 +1,140 @@
+/* index.css */
+.top-products-list {
+  list-style: none;
+  padding: 0;
+}
+
+.top-products-list li {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+}
+
+.trophy-icon {
+  width: 30px;
+  height: 30px;
+  margin-right: 10px;
+  animation: burn 1.5s infinite alternate; /* Hiệu ứng cháy */
+}
+
+/* Hiệu ứng cháy */
+@keyframes burn {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 10px rgba(255, 165, 0, 0.7), 0 0 20px rgba(255, 69, 0, 0.7);
+  }
+  100% {
+    transform: scale(1.1);
+    box-shadow: 0 0 20px rgba(255, 165, 0, 1), 0 0 30px rgba(255, 69, 0, 1);
+  }
+}
+
+/* Màu sắc cho từng cúp */
+.trophy-gold {
+  filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.7)); /* Màu vàng */
+}
+
+.trophy-silver {
+  filter: drop-shadow(0 0 5px rgba(192, 192, 192, 0.7)); /* Màu bạc */
+}
+
+.trophy-bronze {
+  filter: drop-shadow(0 0 5px rgba(205, 127, 50, 0.7)); /* Màu đồng */
+}
+/* index.css */
+
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f4f4f4;
+  margin: 0;
+  padding: 20px;
+}
+
+h1, h2, h3 {
+  color: #333;
+  margin: 10px 0;
+}
+
+.tabs {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.tabs button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  margin: 0 5px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.tabs button:hover {
+  background-color: #0056b3;
+}
+
+.tab-content {
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+}
+
+label {
+  margin-right: 10px;
+}
+
+input[type="date"] {
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+button {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+button:hover {
+  background-color: #218838;
+}
+
+.top-products-list {
+  list-style-type: none;
+  padding: 0;
+}
+
+.top-products-list li {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  margin-bottom: 10px;
+}
+
+.trophy-icon {
+  width: 40px;
+  height: 40px;
+  margin-right: 10px;
+}
+
+.trophy-gold {
+  filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.5));
+}
+
+.trophy-silver {
+  filter: drop-shadow(0 0 5px rgba(192, 192, 192, 0.5));
+}
+
+.trophy-bronze {
+  filter: drop-shadow(0 0 5px rgba(205, 127, 50, 0.5));
+}

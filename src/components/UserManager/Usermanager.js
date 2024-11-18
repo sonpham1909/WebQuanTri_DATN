@@ -32,7 +32,7 @@ const Usermanager = () => {
     const [role, setRole] = useState("");
     const [name, setName] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
-    const pageSize = 5;
+    const pageSize = 10;
     const onChange = (pagination) => {
         setCurrentPage(pagination.current); // Cập nhật trang hiện tại
     };

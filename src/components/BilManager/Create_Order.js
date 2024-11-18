@@ -7,6 +7,7 @@ import { getAllProducts } from '../../services/ProductService';
 import { getPaymentMethod } from '../../services/Payment_method';
 import { getShippingMethod } from '../../services/Shipping_method_service';
 import { createOrder } from '../../services/OrderService';
+import { getVariantsByProductId } from '../../services/VariantService';
 
 const { Option } = Select;
 
@@ -22,11 +23,15 @@ const CreateOrderForm = ({ onCreate, isVisitable, onCancle }) => {
     const [quantities, setQuantities] = useState({}); // Để lưu số lượng cho từng biến thể
     const [variants, setVariants] = useState({}); // Để lưu biến thể cho từng sản phẩm
     const [payments, setpayment] = useState([]);
-    const [selectedPayment, setSelectedPayment] = useState([]);
+    const [selectedPayment, setSelectedPayment] = useState('');
     const [totalAmount, setTotalAmount] = useState('');
 
     const [Shippngs, setShippings] = useState([]);
-    const [selectedShipping, setSelectedShipping] = useState([]);
+    const [selectedShipping, setSelectedShipping] = useState('');
+    const [variantsss, setvariantsss] = useState([]);
+    const [selectedColors, setSelectedColors] = useState({});
+    const [selectedSizes, setSelectedSizes] = useState({});
+    const [selectedVariants, setSelectedVariants] = useState({});
 
     const [form] = Form.useForm();
 
@@ -100,7 +105,39 @@ const CreateOrderForm = ({ onCreate, isVisitable, onCancle }) => {
             setLoading(false);
         }
     }
+    const fetchVariantsByProductId = async () => {
+        try {
+            setLoading(true);
 
+            const variantPromises = selectedProducts.map(async (productId) => {
+                return await getVariantsByProductId(productId);
+            });
+
+            const results = await Promise.all(variantPromises);
+
+            const newVariants = results.flat(); // Gộp tất cả các mảng variants vào một mảng duy nhất
+            console.log(newVariants);
+
+            setvariantsss(newVariants); // Lưu trực tiếp mảng biến thể vào state variantsss
+
+        } catch (error) {
+            message.error('Đã xảy ra lỗi khi lấy biến thể của sản phẩm!');
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+
+
+    useEffect(() => {
+
+
+        if (selectedProducts.length > 0) {
+            fetchVariantsByProductId();
+        }
+
+    }, [selectedProducts]);
 
 
     useEffect(() => {
@@ -119,6 +156,24 @@ const CreateOrderForm = ({ onCreate, isVisitable, onCancle }) => {
         console.log(payments);
 
     }, []);
+
+    // Hàm xử lý khi người dùng chọn màu sắc
+    const handleColorChange = (productId, color) => {
+        setSelectedColors(prevColors => ({
+            ...prevColors,
+            [productId]: color
+        }));
+
+    };
+
+    const handleSizeChange = (productId, size) => {
+        setSelectedSizes(prevColors => ({
+            ...prevColors,
+            [productId]: size
+        }));
+    };
+
+
 
 
 
@@ -174,12 +229,12 @@ const CreateOrderForm = ({ onCreate, isVisitable, onCancle }) => {
             if (!newQuantities[value]) {
                 newQuantities[value] = 1; // Khởi tạo số lượng mặc định là 1
             }
-            if (!newVariants[value]) {
-                newVariants[value] = null; // Khởi tạo biến thể mặc định là null
-            }
+
             if (!newPrices[value]) {
                 newPrices[value] = product.price; // Lưu giá sản phẩm
             }
+
+            fetchVariantsByProductId(); // Gọi hàm để lấy các biến thể từ bảng variant
         });
 
         setQuantities(newQuantities);
@@ -188,7 +243,7 @@ const CreateOrderForm = ({ onCreate, isVisitable, onCancle }) => {
     };
     const handleVariantChange = (productId, selectedVariantId) => {
         const product = products.find(p => p._id === productId); // Tìm sản phẩm đã chọn
-        const variant = product.variants.find(v => v._id === selectedVariantId); // Tìm biến thể đã chọn
+        const variant = variantsss.find(v => v._id === selectedVariantId); // Tìm biến thể đã chọn
         setVariants(prevVariants => ({ ...prevVariants, [productId]: variant })); // Lưu toàn bộ đối tượng biến thể
         console.log(variants);
         setProductPrices(prevPrices => ({ ...prevPrices, [productId]: variant.price }));
@@ -203,7 +258,8 @@ const CreateOrderForm = ({ onCreate, isVisitable, onCancle }) => {
 
         const orderItems = selectedProducts.map(productId => ({
             productId,
-            variant: variants[productId], // Lưu toàn bộ đối tượng biến thể
+            color: selectedColors[productId],
+            size: selectedSizes[productId], // Lưu toàn bộ đối tượng biến thể
             quantity: quantities[productId],
             totalPrice: (quantities[productId] || 1) * (productPrices[productId] || 0), // Tính giá tổng cho sản phẩm
         }));
@@ -216,10 +272,15 @@ const CreateOrderForm = ({ onCreate, isVisitable, onCancle }) => {
     };
 
     const handleChangePayment = (paymentId) => {
-        const payment = payments.find(p => p._id === paymentId);
-        setSelectedPayment(payment);
-        console.log(selectedPayment);
+        setSelectedPayment(paymentId); // Lưu trực tiếp paymentId vào selectedPayment
+        console.log("Selected Payment ID:", paymentId);
 
+    };
+
+    const handleChangeShipping = (shippingId) => {
+
+        setSelectedShipping(shippingId);
+        console.log("Selected shipping ID:", shippingId);
 
     }
 
@@ -227,36 +288,40 @@ const CreateOrderForm = ({ onCreate, isVisitable, onCancle }) => {
         return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
     };
 
-    const create_Order = async()=>{
+    const create_Order = async () => {
         try {
+
+            console.log("Shipping Method ID:", selectedShipping);
+            console.log("Payment Method ID:", selectedPayment);
+
             const data = {
                 user_id: onUserSelect?._id, // Sử dụng toán tử tùy chọn để tránh lỗi nếu onUserSelect không tồn tại
-                shipping_method_id: selectedShipping?._id, // Kiểm tra nếu selectedShipping tồn tại
-                payment_method_id: selectedPayment?._id, // Kiểm tra nếu selectedPayment tồn tại
+                shipping_method_id: selectedShipping,
+                payment_method_id: selectedPayment, // Kiểm tra nếu selectedPayment tồn tại
                 address_id: defaultAddress?._id, // Kiểm tra nếu defaultAddress tồn tại
                 items: selectedProducts.map(productId => ({
                     product_id: productId,
-                    size: variants[productId]?.size, // Lấy size từ biến thể
-                    color: variants[productId]?.color, // Lấy color từ biến thể
+                    size: selectedSizes[productId] || 'Không có', // Lấy size từ biến thể
+                    color: selectedColors[productId] || 'Không có', // Lấy color từ biến thể
                     quantity: quantities[productId], // Số lượng
                     price: productPrices[productId], // Giá sản phẩm
                 })),
             };
-    
+
             // Gọi API để tạo đơn hàng
             const response = await createOrder(data);
-            
+
             // Giả sử bạn đã có hàm API để tạo đơn hàng
 
-          
-        
+
+
             // Gọi hàm onCreate để truyền dữ liệu đơn hàng mới về OrderManager
             onCreate(response.data); // Gọi hàm đã truyền từ OrderManager
-    
-           
-                message.success('Đơn hàng đã được tạo thành công!');
-                // Cập nhật danh sách đơn hàng sau khi tạo thành công
-            
+
+
+            message.success('Đơn hàng đã được tạo thành công!');
+            // Cập nhật danh sách đơn hàng sau khi tạo thành công
+
         } catch (error) {
             console.error('Error creating order', error);
             message.error('Đã xảy ra lỗi khi tạo đơn hàng');
@@ -274,10 +339,11 @@ const CreateOrderForm = ({ onCreate, isVisitable, onCancle }) => {
             width={'80%'}
 
         >
+            <h2>Tạo đơn hàng mới</h2>
             <Form
                 form={form}
                 layout="vertical"
-                
+
                 initialValues={{ status: 'pending' }} // Giá trị mặc định cho trạng thái đơn hàng
             >
                 <Form.Item
@@ -371,41 +437,63 @@ const CreateOrderForm = ({ onCreate, isVisitable, onCancle }) => {
                 {/* Nhập số lượng và chọn biến thể cho từng sản phẩm đã chọn */}
                 {selectedProducts.map(productId => {
                     const product = products.find(p => p._id === productId);
+                    const productVariants = variantsss.filter(variant => variant.product_id === productId); // Lọc các biến thể có product_id khớp với sản phẩm đã chọn
                     const totalPrice = (quantities[productId] || 1) * (productPrices[productId] || 0); // Tính giá tổng
+
+                    // Lọc biến thể theo màu đã chọn
+                    const filteredSizes = productVariants
+                        .filter(variant => variant.color === selectedColors[productId])
+                        .flatMap(variant => variant.sizes);
+
                     return (
                         <div key={productId} style={{ marginBottom: '20px' }}>
                             <h4>{product.name}</h4>
                             <img
-                                src={product.imageUrls[0]} // Đảm bảo rằng variant có thuộc tính imageUrl
-
-                                style={{ width: '30px', height: '30px', marginRight: '10px' }} // Điều chỉnh kích thước theo ý muốn
+                                src={product.imageUrls[0]}
+                                style={{ width: '30px', height: '30px', marginRight: '10px' }}
                             />
-                            <Form.Item label="Chọn biến thể">
+                            <Form.Item label="Chọn màu sắc">
                                 <Select
-                                    placeholder="Chọn biến thể"
-                                    onChange={(variantId) => handleVariantChange(productId, variantId)}
+                                    placeholder="Chọn màu"
+                                    onChange={(color) => handleColorChange(productId, color)}
                                 >
-                                    {product.variants.map(variant => (
-                                        <Option key={variant._id} value={variant._id}>
-
-                                            {variant.size} - {variant.color}  {/* Hiển thị tên biến thể */}
-                                            -<span>Số lượng còn lại : {variant.quantity}</span>
-                                            -<span>giá : {variant.price}</span>
+                                    {/* Lọc và hiển thị các màu sắc duy nhất */}
+                                    {[...new Set(productVariants.map(variant => variant.color))].map(color => (
+                                        <Option key={color} value={color}>
+                                            {color}
                                         </Option>
                                     ))}
                                 </Select>
                             </Form.Item>
+
+                            {/* Chỉ hiển thị chọn size nếu màu sắc đã được chọn */}
+                            {selectedColors[productId] && (
+                                <Form.Item label="Chọn size">
+                                    <Select
+                                        placeholder="Chọn size"
+                                        onChange={(sizeId) => handleSizeChange(productId, sizeId)}
+                                    >
+                                        {filteredSizes.map(size => (
+                                            <Option key={size._id} value={size.size}>
+                                                {size.size} - Số lượng: {size.quantity}
+                                            </Option>
+                                        ))}
+                                    </Select>
+                                </Form.Item>
+                            )}
+
                             <Form.Item label="Số lượng">
                                 <InputNumber
                                     min={1}
                                     value={quantities[productId]}
                                     onChange={(value) => handleQuantityChange(productId, value)}
                                 />
-                                <p>Giá tổng: {totalPrice} VNĐ</p> {/* Hiển thị giá tổng */}
+                                <p>Giá tổng: {totalPrice} VNĐ</p>
                             </Form.Item>
                         </div>
                     );
                 })}
+
 
 
                 <Form.Item>
@@ -452,21 +540,21 @@ const CreateOrderForm = ({ onCreate, isVisitable, onCancle }) => {
                     <Select
                         // Cho phép chọn nhiều sản phẩm
                         placeholder="Chọn phương thức shipping"
-                        onChange={handleChangePayment}
+                        onChange={handleChangeShipping}
                         dropdownStyle={{ maxHeight: '300px' }}
 
 
                     >
-                        {Shippngs.map(payment => (
+                        {Shippngs.map(shipping => (
                             <Option
                                 style={{ display: 'flex', alignItems: 'center' }}
-                                key={payment._id} value={payment._id}>
+                                key={shipping._id} value={shipping._id}>
                                 <div style={{
                                     display: 'flex',
                                     alignItems: 'center'
                                 }}>
 
-                                    <h4>{payment.name}</h4>
+                                    <h4>{shipping.name}</h4>
 
                                 </div>
                             </Option>
@@ -474,7 +562,7 @@ const CreateOrderForm = ({ onCreate, isVisitable, onCancle }) => {
                     </Select>
                 </Form.Item>
                 <Form.Item>
-                    <p style={{ color: '#28a745', fontWeight: 'bold', fontSize:'20px' }}>Tổng tiền: {formatCurrency(totalAmount)}</p>
+                    <p style={{ color: '#28a745', fontWeight: 'bold', fontSize: '20px' }}>Tổng tiền: {formatCurrency(totalAmount)}</p>
                 </Form.Item>
 
 

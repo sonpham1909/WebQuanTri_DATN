@@ -16,7 +16,7 @@ import { AppContext } from '../../services/AppContext';
 
 function Home() {
   const location = useLocation();
-  const [selectedSidebarItem, setSelectedSidebarItem] = useState('item1');
+  const [selectedSidebarItem, setSelectedSidebarItem] = useState('item0');
   const navigate = useNavigate();
   const { setState } = useContext(AppContext);
 
@@ -87,15 +87,16 @@ function Home() {
 
   return (
     <div>
-      <Header />
+      <Header handleLogout={handleLogout}/>
       <div style={{ display: 'flex' }}>
         <div className="sidebar">
           <ul>
+          <h4 className='titleul'>| Trang chủ</h4>
             <li
               className={selectedSidebarItem === 'item0' ? 'active' : ''}
               onClick={() => handleSidebarItemClick('item0')}
             >
-              Trang chủ
+               Thống kê
             </li>
 
             <h4 className='titleul'>| Quản lý</h4>
@@ -142,10 +143,7 @@ function Home() {
               Quản lý thanh toán
             </li>
           </ul>
-          {/* Nút đăng xuất */}
-          <button className="logout-button" onClick={handleLogout}>
-            Đăng xuất
-          </button>
+
         </div>
         <div className="container">
           <div className="content">

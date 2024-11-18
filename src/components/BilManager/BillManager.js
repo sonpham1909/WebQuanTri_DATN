@@ -1,28 +1,33 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Input, Space, Table, Tag } from 'antd';
-import { getAllOrder } from '../../services/OrderService';
+import { Button, Input, message, Modal, Space, Table, Tag } from 'antd';
+import { ChangeStatusOrder, getAllOrder } from '../../services/OrderService';
 import LoadingCo from '../loading/loading';
 import { SearchOutlined } from '@ant-design/icons';
 import CreateOrderForm from './Create_Order';
-import { render } from '@testing-library/react';
+import { getOrderItemsByOrderId } from '../../services/order_iteamServices';
 
 const OrderManager = () => {
-  const [allOrders, setAllOrders] = useState([]); // lưu toàn bộ danh sách đơn hàng
-  const [orders, setOrders] = useState([]); // lưu danh sách đơn hàng hiển thị
+  const [allOrders, setAllOrders] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isVisitModalCreate, setIsVisitModalCreate] = useState(false);
   const [currentStatus, setCurrentStatus] = useState("pending");
+  const [isModalChangeStatus, setIsModalChangeStatus] = useState(false);
+  const [selectedOrderChange, setSelectedOrderChange] = useState('');
+  const [selectedOrderItems, setSelectedOrderItems] = useState([]);
+  const [isOrderItemsModalVisible, setIsOrderItemsModalVisible] = useState(false);
+  const [currentOrderId, setCurrentOrderId] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState(null);
 
   const fetchOrder = async () => {
     setLoading(true);
     try {
       const res = await getAllOrder();
-      setAllOrders(res); // lưu toàn bộ dữ liệu đơn hàng vào allOrders
-      const orderFirst = res.filter(order => order.status === "pending");
-      console.log('order pending: ',orderFirst);
+      setAllOrders(res);
+      console.log(res);
       
+      const orderFirst = res.filter(order => order.status === currentStatus);
       setOrders(orderFirst);
-     
     } catch (error) {
       console.error('Error fetching order', error);
     } finally {
@@ -32,20 +37,89 @@ const OrderManager = () => {
 
   useEffect(() => {
     fetchOrder();
-   
   }, []);
 
   const handleCreateOrder = async () => {
     await fetchOrder();
-    setIsVisitModalCreate(false);
+    setIsVisitModalCreate(true);
   };
 
   const handleClick = (status) => {
     setCurrentStatus(status.label);
-    const filteredOrders = allOrders.filter(order => order.status === status.label); // Lọc theo trạng thái
+    const filteredOrders = allOrders.filter(order => order.status === status.label);
     setOrders(filteredOrders);
-    console.log('Selected status:', status.label);
   };
+
+  const handleClickOrderChange = (orderId) => {
+    setSelectedOrderChange(orderId);
+    setIsModalChangeStatus(true);
+  };
+
+  const handleSubmitChangeStatus = async () => {
+    let statusChange = currentStatus;
+    switch (currentStatus) {
+      case 'pending':
+        statusChange = 'ready_for_shipment';
+        break;
+      case 'ready_for_shipment':
+        statusChange = 'shipping';
+        break;
+      case 'shipping':
+        statusChange = 'delivered';
+        break;
+      default:
+        console.log('Không thấy status');
+        return;
+    }
+
+    try {
+      await ChangeStatusOrder(selectedOrderChange, statusChange);
+      message.success('Xác nhận thành công');
+      await fetchOrder();
+      setIsModalChangeStatus(false);
+      setSelectedOrderChange('');
+    } catch (error) {
+      message.error('Thay đổi không thành công');
+    }
+  };
+
+  const fetchOrderItems = async (orderId) => {
+    try {
+      const items = await getOrderItemsByOrderId(orderId);
+
+      const order = allOrders.find(order => order._id === orderId);
+      setSelectedOrder(order);
+      console.log(order);
+      
+      setSelectedOrderItems(items);
+      setCurrentOrderId(orderId);
+      setIsOrderItemsModalVisible(true);
+    } catch (error) {
+      message.error('Lỗi khi lấy Order Items');
+    }
+  };
+
+  const handleOrderClick = (orderId) => {
+    fetchOrderItems(orderId);
+  };
+
+  const closeOrderItemsModal = () => {
+    setIsOrderItemsModalVisible(false);
+    setSelectedOrderItems([]);
+    setCurrentOrderId(null);
+  };
+
+  const handleOnCancelCreate = () => {
+    setIsVisitModalCreate(false); 
+  };
+
+  const statusList = [
+    { label: 'pending', color: 'blue' },
+    { label: 'ready_for_shipment', color: 'orange' },
+    { label: 'shipping', color: 'purple' },
+    { label: 'delivered', color: 'green' },
+    { label: 'canceled', color: 'red' },
+  ];
 
   const columns = [
     {
@@ -84,10 +158,10 @@ const OrderManager = () => {
           case 'pending':
             color = 'blue';
             break;
-          case 'Đang chờ shipper':
+          case 'ready_for_shipment':
             color = 'orange';
             break;
-          case 'Đang giao hàng':
+          case 'shipping':
             color = 'purple';
             break;
           case 'delivered':
@@ -101,31 +175,51 @@ const OrderManager = () => {
         }
         return <Tag color={color}>{status}</Tag>;
       },
-      
     },
     {
-      title:'Xác nhận',
+      title: 'Xác nhận',
       render: (text, record) => (
-        <div>
-          <Button>
-            Xác nhận
-          </Button>
-        </div>
+        <Button
+          onClick={() => handleClickOrderChange(record._id)}
+          disabled={record.status === 'canceled' || record.status === 'delivered'}
+        >
+          Xác nhận
+        </Button>
+      )
+    },
+    {
+      title: 'Chi tiết',
+      render: (text, record) => (
+        <Button onClick={() => handleOrderClick(record._id)}>
+          Xem Order Items
+        </Button>
       )
     }
   ];
 
-  const handleOnCancelCreate = () => {
-    setIsVisitModalCreate(false);
-  };
-
-  const statusList = [
-    { label: 'pending', color: 'blue' },
-    { label: 'Đang chờ lấy hàng', color: 'orange' },
-    { label: 'Đang giao hàng', color: 'purple' },
-    { label: 'delivered', color: 'green' },
-    { label: 'canceled', color: 'red' },
-    { label: 'Đã thanh toán', color: 'gold' }
+  const orderItemColumns = [
+    {
+      title: 'Sản phẩm',
+      dataIndex: 'name',
+      key: 'name',
+    },
+    {
+      title: 'Số lượng',
+      dataIndex: 'quantity',
+      key: 'quantity',
+    },
+    {
+      title: 'Giá',
+      dataIndex: 'price',
+      key: 'price',
+      render: (price) => `${price.toLocaleString('vi-VN')} VND`,
+    },
+    {
+      title: 'Tổng tiền',
+      dataIndex: 'total_amount',
+      key: 'total_amount',
+      render: (total) => `${total.toLocaleString('vi-VN')} VND`,
+    },
   ];
 
   if (loading) {
@@ -150,7 +244,7 @@ const OrderManager = () => {
           Tạo đơn hàng mới
         </Button>
       </div>
-      
+
       <div style={{ display: 'flex', justifyContent: 'left', gap: '10px' }}>
         {statusList.map((status) => (
           <Button
@@ -175,6 +269,101 @@ const OrderManager = () => {
         onCancle={handleOnCancelCreate}
         onCreate={handleCreateOrder}
       />
+
+      <Modal
+        visible={isModalChangeStatus}
+        closable={false}
+        onCancel={() => {
+          setIsModalChangeStatus(false);
+          setSelectedOrderChange('');
+        }}
+        onOk={() => handleSubmitChangeStatus()}
+      >
+        <h3 style={{ textAlign: 'center' }}>
+          Xác nhận hoàn thành {currentStatus} cho đơn hàng: {selectedOrderChange || 'null'}
+        </h3>
+      </Modal>
+
+      <Modal
+        title={`Chi tiết đơn hàng ID: ${currentOrderId}`}
+        visible={isOrderItemsModalVisible}
+        onCancel={closeOrderItemsModal}
+        footer={null}
+      >
+
+      <p><strong>Người nhận : </strong>{selectedOrder?.recipientName} </p>
+      <p><strong>SDT : </strong>{selectedOrder?.recipientPhone} </p>
+      <p><strong>Địa chỉ: </strong>{`${selectedOrder?.addressDetail?.street}, ${selectedOrder?.addressDetail?.ward}, ${selectedOrder?.addressDetail?.district}, ${selectedOrder?.addressDetail?.city}`}</p>
+
+      <p><strong>Ghi chú : </strong>{selectedOrder?.notes} </p>
+
+
+        {selectedOrderItems?.map(orderItem => (
+          <div key={orderItem._id} style={{
+            marginBottom: '15px',
+            border: '1px solid green',
+            display: 'flex',
+            alignItems:'center'
+          }}>
+            <img src={orderItem.image_variant} alt={'ảnh sản phẩm'} style={{ width: '100px', height: '100px' }} />
+            <div>
+              <p style={{
+                fontSize: 16,
+                fontWeight: 600,
+                marginLeft: 10
+              }}>{orderItem.name}</p>
+              <div style={{
+                display: 'flex'
+              }}>
+                <p style={{
+                  fontFamily: 'cursive',
+                  margin: 10
+                }}>Màu: {orderItem.color}</p>
+                <p style={{
+                  fontFamily: 'cursive',
+                  margin: 10
+                }}>size: {orderItem.size}</p>
+
+                
+              </div>
+             <div style={{
+              display:'flex',
+              alignItems:'center'
+             }}>
+             <p style={{
+                  fontFamily: 'fantasy',
+                  margin: 10,
+                  color:'red'
+                }}>Giá: {orderItem.price.toLocaleString('vi-VN')} VND</p> 
+                x
+                <p style={{
+                  fontFamily: 'fantasy',
+                  margin: 10,
+                  
+                }}>{orderItem.quantity}</p> 
+
+                =
+
+                <p style={{
+                  fontFamily: 'fantasy',
+                  margin: 10,
+                  
+                }}>{orderItem.total_amount.toLocaleString('vi-VN')} VND</p> 
+                
+             </div>
+            </div>
+          </div>
+        ))}
+      
+        <p>Phương thức thanh toán: {selectedOrder?.payment_method}</p>
+        <p>Phương thức giao hàng: {selectedOrder?.shipping_method}</p>
+        <p style={{
+                  fontFamily: 'fantasy',
+                  margin: 10,
+                  
+                }}>Tổng tiền: {selectedOrder?.total_amount.toLocaleString('vi-VN')} VND</p> 
+      </Modal>
+
     </div>
   );
 };

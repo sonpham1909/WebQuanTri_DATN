@@ -52,3 +52,13 @@ export const getOrderItemByOrderId = async(orderId) => {
         throw error;
     }
 }
+
+export const ChangeStatusOrder = async(orderId, status) => {
+    try {
+        const response = await axiosInstance.patch(`/${orderId}/change_status`,{status});
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching order items:', error.response ? error.response.data : error.message);
+        throw error;
+    }
+}

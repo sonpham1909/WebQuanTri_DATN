@@ -53,10 +53,10 @@ const ReviewManager = () => {
       const filteredReviews = allReviews.filter(review => review.product_id === productId);
       const reviewsWithUserInfo = await Promise.all(filteredReviews.map(async (review) => {
         const user = users.find(user => user._id === review.user_id);
-        
+
         // Lấy phản hồi cho đánh giá này
         const reviewResponses = await getAllResponses(review._id);
-        
+
         return {
           ...review,
           userName: user ? user.full_name : 'Không rõ',
@@ -87,7 +87,7 @@ const ReviewManager = () => {
         await addResponse({ review_id: currentReviewId, user_id: userId, comment: responseText });
         setResponseText('');
         setCurrentReviewId(null);
-        
+
         // Cập nhật lại đánh giá để lấy phản hồi mới
         fetchReviews(reviews.find(review => review._id === currentReviewId).product_id);
       } catch (error) {
@@ -149,7 +149,7 @@ const ReviewManager = () => {
   const handleSearch = (e) => {
     setSearchTerm(e.target.value); // Cập nhật từ khóa tìm kiếm
   };
-  
+
   // Định nghĩa các cột cho bảng sản phẩm
   const columns = [
     {
@@ -188,12 +188,12 @@ const ReviewManager = () => {
 
   return (
     <div className="container">
-<Input
-  placeholder="Tìm kiếm sản phẩm..."
-  prefix={<SearchOutlined />}
-  style={{ marginBottom: 16, width: 300 }}
-  onChange={handleSearch} // Gọi hàm tìm kiếm khi thay đổi
-/>
+      <Input
+        placeholder="Tìm kiếm sản phẩm..."
+        prefix={<SearchOutlined />}
+        style={{ marginBottom: 16, width: 300 }}
+        onChange={handleSearch} // Gọi hàm tìm kiếm khi thay đổi
+      />
 
       <div className="headerPage">
         <h3 className="titlepage">Quản lý sản phẩm</h3>
@@ -201,18 +201,18 @@ const ReviewManager = () => {
       </div>
 
       <Table
-  className="table"
-  dataSource={products.filter(product => 
-    product.name.toLowerCase().includes(searchTerm.toLowerCase())
-  )} // Lọc sản phẩm theo từ khóa tìm kiếm
-  columns={columns}
-  rowKey="_id"
-  pagination={{
-    pageSize,
-    current: currentPage,
-    onChange: (page) => setCurrentPage(page),
-  }}
-/>
+        className="table"
+        dataSource={products.filter(product =>
+          product.name.toLowerCase().includes(searchTerm.toLowerCase())
+        )} // Lọc sản phẩm theo từ khóa tìm kiếm
+        columns={columns}
+        rowKey="_id"
+        pagination={{
+          pageSize,
+          current: currentPage,
+          onChange: (page) => setCurrentPage(page),
+        }}
+      />
 
 
       {/* Modal hiển thị đánh giá */}
@@ -237,14 +237,12 @@ const ReviewManager = () => {
                   <strong>{review.userName}</strong>
                   <div>{review.comment}</div>
                   <div><em>{review.rating}/5⭐</em></div>
-                  {review.img?.map(img => (
-                    
-                      <img
-                        src={img}
-                        alt="Hình ảnh đánh giá"
-                        style={{ width: '100px', marginTop: '5px', borderRadius: '5px' }}
-                      />
-                   
+                  {Array.isArray(review.img) && review.img.map(img => (
+                    <img
+                      src={img}
+                      alt="Hình ảnh đánh giá"
+                      style={{ width: '100px', marginTop: '5px', borderRadius: '5px' }}
+                    />
                   ))}
 
                   {/* Hiển thị phản hồi dưới đánh giá */}
@@ -253,9 +251,9 @@ const ReviewManager = () => {
                       <strong>Phản hồi:</strong>
                       <ul>
                         {review.responses.map((response) => (
-                          <li 
-                            key={response._id} 
-                            onMouseDown={() => handleResponseLongPress(response)} 
+                          <li
+                            key={response._id}
+                            onMouseDown={() => handleResponseLongPress(response)}
                             style={{ cursor: 'pointer' }}
                           >
                             <strong>{users.find(user => user._id === response.user_id)?.full_name || 'Người dùng'}:</strong> {response.comment}

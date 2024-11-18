@@ -23,14 +23,15 @@ const CreateOrderForm = ({ onCreate, isVisitable, onCancle }) => {
     const [quantities, setQuantities] = useState({}); // Để lưu số lượng cho từng biến thể
     const [variants, setVariants] = useState({}); // Để lưu biến thể cho từng sản phẩm
     const [payments, setpayment] = useState([]);
-    const [selectedPayment, setSelectedPayment] = useState([]);
+    const [selectedPayment, setSelectedPayment] = useState('');
     const [totalAmount, setTotalAmount] = useState('');
 
     const [Shippngs, setShippings] = useState([]);
-    const [selectedShipping, setSelectedShipping] = useState([]);
+    const [selectedShipping, setSelectedShipping] = useState('');
     const [variantsss, setvariantsss] = useState([]);
     const [selectedColors, setSelectedColors] = useState({});
     const [selectedSizes, setSelectedSizes] = useState({});
+    const [selectedVariants, setSelectedVariants] = useState({});
 
     const [form] = Form.useForm();
 
@@ -162,6 +163,7 @@ const CreateOrderForm = ({ onCreate, isVisitable, onCancle }) => {
             ...prevColors,
             [productId]: color
         }));
+
     };
 
     const handleSizeChange = (productId, size) => {
@@ -257,7 +259,7 @@ const CreateOrderForm = ({ onCreate, isVisitable, onCancle }) => {
         const orderItems = selectedProducts.map(productId => ({
             productId,
             color: selectedColors[productId],
-            size:selectedSizes[productId], // Lưu toàn bộ đối tượng biến thể
+            size: selectedSizes[productId], // Lưu toàn bộ đối tượng biến thể
             quantity: quantities[productId],
             totalPrice: (quantities[productId] || 1) * (productPrices[productId] || 0), // Tính giá tổng cho sản phẩm
         }));
@@ -270,10 +272,15 @@ const CreateOrderForm = ({ onCreate, isVisitable, onCancle }) => {
     };
 
     const handleChangePayment = (paymentId) => {
-        const payment = payments.find(p => p._id === paymentId);
-        setSelectedPayment(payment);
-        console.log(selectedPayment);
+        setSelectedPayment(paymentId); // Lưu trực tiếp paymentId vào selectedPayment
+        console.log("Selected Payment ID:", paymentId);
 
+    };
+
+    const handleChangeShipping = (shippingId) => {
+
+        setSelectedShipping(shippingId);
+        console.log("Selected shipping ID:", shippingId);
 
     }
 
@@ -283,10 +290,14 @@ const CreateOrderForm = ({ onCreate, isVisitable, onCancle }) => {
 
     const create_Order = async () => {
         try {
+
+            console.log("Shipping Method ID:", selectedShipping);
+            console.log("Payment Method ID:", selectedPayment);
+
             const data = {
                 user_id: onUserSelect?._id, // Sử dụng toán tử tùy chọn để tránh lỗi nếu onUserSelect không tồn tại
-                shipping_method_id: selectedShipping?._id, // Kiểm tra nếu selectedShipping tồn tại
-                payment_method_id: selectedPayment?._id, // Kiểm tra nếu selectedPayment tồn tại
+                shipping_method_id: selectedShipping,
+                payment_method_id: selectedPayment, // Kiểm tra nếu selectedPayment tồn tại
                 address_id: defaultAddress?._id, // Kiểm tra nếu defaultAddress tồn tại
                 items: selectedProducts.map(productId => ({
                     product_id: productId,
@@ -529,21 +540,21 @@ const CreateOrderForm = ({ onCreate, isVisitable, onCancle }) => {
                     <Select
                         // Cho phép chọn nhiều sản phẩm
                         placeholder="Chọn phương thức shipping"
-                        onChange={handleChangePayment}
+                        onChange={handleChangeShipping}
                         dropdownStyle={{ maxHeight: '300px' }}
 
 
                     >
-                        {Shippngs.map(payment => (
+                        {Shippngs.map(shipping => (
                             <Option
                                 style={{ display: 'flex', alignItems: 'center' }}
-                                key={payment._id} value={payment._id}>
+                                key={shipping._id} value={shipping._id}>
                                 <div style={{
                                     display: 'flex',
                                     alignItems: 'center'
                                 }}>
 
-                                    <h4>{payment.name}</h4>
+                                    <h4>{shipping.name}</h4>
 
                                 </div>
                             </Option>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { getAllPaymentMethods, addPaymentMethod, updatePaymentMethod, deletePaymentMethod } from '../../services/PaymentMethodServices';
-import { Button, Table, Modal, Input, notification } from 'antd';
+import { Button, Table, Modal, Input, notification, Upload } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import LoadingCo from '../loading/loading';
 
@@ -53,12 +53,20 @@ const PaymentMethodManager = () => {
     const handleSave = async () => {
         try {
             if (selectedMethod?._id) {
-                // Update existing method
-                await updatePaymentMethod(selectedMethod._id, selectedMethod);
+                // Update payment method
+                await updatePaymentMethod(selectedMethod._id, {
+                    name: selectedMethod.name,
+                    description: selectedMethod.description,
+                    image: selectedMethod.image,
+                });
                 notification.success({ message: 'Cập nhật phương thức thanh toán thành công.' });
             } else {
-                // Add new method
-                await addPaymentMethod(selectedMethod);
+                // Add new payment method
+                await addPaymentMethod({
+                    name: selectedMethod.name,
+                    description: selectedMethod.description,
+                    image: selectedMethod.image,
+                });
                 notification.success({ message: 'Thêm phương thức thanh toán thành công.' });
             }
             fetchPaymentMethods(); // Refresh the list
@@ -68,7 +76,7 @@ const PaymentMethodManager = () => {
             notification.error({ message: 'Lỗi khi lưu phương thức thanh toán. Vui lòng thử lại.' });
         }
     };
-
+    
     const confirmDelete = (id) => {
         Modal.confirm({
             title: 'Xóa phương thức thanh toán',
@@ -89,6 +97,20 @@ const PaymentMethodManager = () => {
         });
     };
 
+    const handleImageUpload = (file) => {
+        if (file && file instanceof File) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setSelectedMethod((prev) => ({
+                    ...prev,
+                    image: reader.result, // Store the base64 image
+                }));
+            };
+            reader.readAsDataURL(file);
+        }
+        return false; // Prevent automatic upload
+    };
+    
     const columns = [
         {
             title: 'STT',
@@ -105,6 +127,18 @@ const PaymentMethodManager = () => {
             title: 'Mô tả',
             dataIndex: 'description',
             key: 'description',
+        },
+        {
+            title: 'Ảnh',
+            dataIndex: 'image',
+            key: 'image',
+            render: (image) => (
+                <img
+                    src={image}
+                    alt="payment method"
+                    style={{ width: '50px', height: '50px', objectFit: 'cover' }}
+                />
+            ),
         },
         {
             title: 'Hành động',
@@ -128,8 +162,8 @@ const PaymentMethodManager = () => {
                 prefix={<SearchOutlined />}
                 style={{ marginBottom: '20px', width: '300px' }}
             />
-            <br></br>
-            <Button type="primary" onClick={() => { setSelectedMethod(null); setIsModalVisible(true); }}>Thêm </Button>
+            <br />
+            <Button type="primary" onClick={() => { setSelectedMethod(null); setIsModalVisible(true); }}>Thêm</Button>
             <h3 className="titlepage">Quản lý phương thức thanh toán</h3>
             <Table
                 columns={columns}
@@ -158,6 +192,23 @@ const PaymentMethodManager = () => {
                     value={selectedMethod?.description || ''}
                     onChange={(e) => setSelectedMethod({ ...selectedMethod, description: e.target.value })}
                 />
+                <Upload
+                    accept="image/*"
+                    showUploadList={false}
+                    beforeUpload={handleImageUpload}
+                >
+                    <Button>Chọn ảnh</Button>
+                </Upload>
+
+                {selectedMethod?.image && (
+                    <div style={{ marginTop: '10px' }}>
+                        <img
+                            src={selectedMethod.image}
+                            alt="payment method"
+                            style={{ width: '100px', height: '100px', objectFit: 'cover' }}
+                        />
+                    </div>
+                )}
             </Modal>
         </div>
     );

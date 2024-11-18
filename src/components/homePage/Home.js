@@ -10,6 +10,7 @@ import AddressManager from '../AddressManager/AddressManager';
 import ReviewManager from '../ReviewManager/ReviewManager';
 import { useNavigate, useLocation } from 'react-router-dom';
 import PaymentMethodManager from '../PaymentMethodManager/PaymentMethodManager';
+import MessageManager from '../MessageManager/MessageManager';
 
 
 function Home() {
@@ -67,6 +68,8 @@ const handleLogout = async () => {
           return <ReviewManager />;
           case 'item7':
             return <PaymentMethodManager />;
+            case 'item8':
+              return <MessageManager />;
       default:
         return 'Không tìm thấy nội dung';
     }
@@ -127,6 +130,12 @@ const handleLogout = async () => {
               onClick={() => handleSidebarItemClick('item7')}
             >
               Quản lý thanh toán
+            </li>
+            <li
+              className={selectedSidebarItem === 'item8' ? 'active' : ''}
+              onClick={() => handleSidebarItemClick('item8')}
+            >
+         Tin nhắn
             </li>
           </ul>
           {/* Nút đăng xuất */}

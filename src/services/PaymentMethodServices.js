@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:3000/v1/paymentmethod'; // Thay đổi đường dẫn API đến payment_methods
+const API_URL = 'http://localhost:3000/v1/PaymentMethod'; // Thay đổi đường dẫn API đến payment_methods
 
 // Khởi tạo instance axios
 const getToken = () => {

@@ -35,6 +35,16 @@ export const getAllOrderItems = async () => {
     }
 };
 
+export const getOrderItemsByOrderId = async (orderId) => {
+    try {
+        const response = await axiosInstance.get(`/${orderId}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching order items:", error.response ? error.response.data : error.message);
+        throw error;
+    }
+};
+
 // Hàm lấy sản phẩm bán chạy nhất
 export const getTopSellingProducts = async () => {
     try {

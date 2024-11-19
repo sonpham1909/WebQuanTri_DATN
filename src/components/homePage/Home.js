@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import './Sidebar.css';
 import Header from '../Header/Header';
 import Usermanager from '../UserManager/Usermanager';
@@ -11,12 +11,16 @@ import ReviewManager from '../ReviewManager/ReviewManager';
 import { useNavigate, useLocation } from 'react-router-dom';
 import PaymentMethodManager from '../PaymentMethodManager/PaymentMethodManager';
 import MessageManager from '../MessageManager/MessageManager';
+import axios from 'axios';
+import { AppContext } from '../../services/AppContext';
+
 
 
 function Home() {
   const location = useLocation();
-  const [selectedSidebarItem, setSelectedSidebarItem] = useState('item1');
+  const [selectedSidebarItem, setSelectedSidebarItem] = useState('item0');
   const navigate = useNavigate();
+  const { setState } = useContext(AppContext);
 
   useEffect(() => {
     // Kiểm tra nếu có state từ màn hình khác
@@ -29,25 +33,33 @@ function Home() {
     setSelectedSidebarItem(itemId);
   };
 
-const handleLogout = async () => {
-    const token = localStorage.getItem('token');
-    console.log('Token:', token); // Log token để kiểm tra
-
+  const handleLogout = async () => {
     try {
-        await fetch('http://localhost:3000/v1/auth/logout', {
+        const response = await fetch('http://localhost:3000/v1/auth/logout', {
             method: 'POST',
+            credentials: 'include', // Để gửi cookie
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`, // Đảm bảo token được thêm vào
             },
         });
 
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`Đăng xuất thất bại: ${errorData.message || 'Lỗi không xác định'}`);
+        }
+
+        const data = await response.json();
+        console.log(data.message);
+        
+        // Xoá token và điều hướng
         localStorage.removeItem('token');
         navigate('/login');
     } catch (error) {
         console.error('Đăng xuất thất bại:', error);
     }
 };
+
+
 
 
   const getContent = (itemId) => {
@@ -70,6 +82,7 @@ const handleLogout = async () => {
             return <PaymentMethodManager />;
             case 'item8':
               return <MessageManager />;
+
       default:
         return 'Không tìm thấy nội dung';
     }
@@ -77,15 +90,16 @@ const handleLogout = async () => {
 
   return (
     <div>
-      <Header />
+      <Header handleLogout={handleLogout}/>
       <div style={{ display: 'flex' }}>
         <div className="sidebar">
           <ul>
+          <h4 className='titleul'>| Trang chủ</h4>
             <li
               className={selectedSidebarItem === 'item0' ? 'active' : ''}
               onClick={() => handleSidebarItemClick('item0')}
             >
-              Trang chủ
+               Thống kê
             </li>
 
             <h4 className='titleul'>| Quản lý</h4>
@@ -138,10 +152,7 @@ const handleLogout = async () => {
          Tin nhắn
             </li>
           </ul>
-          {/* Nút đăng xuất */}
-          <button className="logout-button" onClick={handleLogout}>
-            Đăng xuất
-          </button>
+
         </div>
         <div className="container">
           <div className="content">

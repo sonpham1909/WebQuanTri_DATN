@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Đường dẫn API gốc
-const API_URL = 'http://localhost:3000/v1/message';
+const API_URL = 'http://localhost:3000/v1/message';  // Đường dẫn đúng theo controllers/MessageController.js
 
 // Hàm để lấy token từ localStorage
 const getToken = () => {
@@ -25,56 +25,43 @@ axiosInstance.interceptors.request.use((config) => {
     return config;
 });
 
-// Gửi tin nhắn từ khách hàng
-export const sendMessage = async (messageData) => {
+// Tạo tin nhắn mới
+export const createMessage = async (messageData) => {
     try {
-        const response = await axiosInstance.post('/messages', messageData); // Gửi tin nhắn đến /messages
+        const response = await axiosInstance.post('/messages', messageData);  // Gửi tin nhắn đến /messages
         return response.data; // Trả về dữ liệu nhận được từ server
     } catch (error) {
-        console.error("Error sending message:", error.response?.data || error.message);
+        console.error("Error creating message:", error.response?.data || error.message);
         throw error; // Ném lỗi ra ngoài để xử lý
     }
 };
 
-// Admin trả lời tin nhắn của khách hàng
-export const replyMessage = async (replyData) => {
+// Lấy tất cả tin nhắn
+export const getAllMessages = async () => {
     try {
-        const response = await axiosInstance.post('/replies', replyData); // Trả lời tin nhắn qua endpoint /messages/replies
+        const response = await axiosInstance.get('/messages');  // Lấy tất cả tin nhắn từ endpoint /messages
         return response.data; // Trả về dữ liệu nhận được từ server
     } catch (error) {
-        console.error("Error replying to message:", error.response?.data || error.message);
+        console.error("Error fetching all messages:", error.response?.data || error.message);
         throw error; // Ném lỗi ra ngoài để xử lý
     }
 };
 
-// Lấy tất cả tin nhắn của một người dùng
-export const getAllMessagesByUserId = async (userId) => {
+// Lấy tin nhắn theo ID
+export const getMessageById = async (messageId) => {
     try {
-        const response = await axiosInstance.get('/messages', {
-            params: { userId: userId }, // Gửi userId như là tham số truy vấn
-        });
+        const response = await axiosInstance.get(`/messages/${messageId}`);  // Lấy tin nhắn theo ID
         return response.data; // Trả về dữ liệu nhận được từ server
     } catch (error) {
-        console.error("Error fetching messages:", error.response?.data || error.message);
+        console.error("Error fetching message by ID:", error.response?.data || error.message);
         throw error; // Ném lỗi ra ngoài để xử lý
     }
 };
 
-// Lấy tất cả phản hồi của một tin nhắn
-export const getRepliesByMessageId = async (messageId) => {
-    try {
-        const response = await axiosInstance.get(`/messages/${messageId}/replies`); // Lấy phản hồi cho một tin nhắn
-        return response.data; // Trả về dữ liệu nhận được từ server
-    } catch (error) {
-        console.error("Error fetching replies:", error.response?.data || error.message);
-        throw error; // Ném lỗi ra ngoài để xử lý
-    }
-};
-
-// Cập nhật nội dung của một tin nhắn
+// Cập nhật tin nhắn
 export const updateMessage = async (messageId, messageData) => {
     try {
-        const response = await axiosInstance.put(`/messages/${messageId}`, messageData); // Cập nhật tin nhắn qua /messages/:messageId
+        const response = await axiosInstance.put(`/messages/${messageId}`, messageData);  // Cập nhật tin nhắn qua /messages/:messageId
         return response.data; // Trả về dữ liệu nhận được từ server
     } catch (error) {
         console.error("Error updating message:", error.response?.data || error.message);
@@ -82,10 +69,10 @@ export const updateMessage = async (messageId, messageData) => {
     }
 };
 
-// Xóa một tin nhắn
+// Xóa tin nhắn
 export const deleteMessage = async (messageId) => {
     try {
-        const response = await axiosInstance.delete(`/messages/${messageId}`); // Xóa tin nhắn qua /messages/:messageId
+        const response = await axiosInstance.delete(`/messages/${messageId}`);  // Xóa tin nhắn qua /messages/:messageId
         return response.data; // Trả về dữ liệu nhận được từ server
     } catch (error) {
         console.error("Error deleting message:", error.response?.data || error.message);

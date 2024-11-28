@@ -62,3 +62,18 @@ export const ChangeStatusOrder = async(orderId, status) => {
         throw error;
     }
 }
+
+export const cancelOrder = async (orderId, reason) => {
+    try {
+        const cancelReason = String(reason).trim(); // Đảm bảo lý do là chuỗi và không rỗng
+
+        const response = await axiosInstance.patch('/cancel', { 
+            orderId, 
+            cancelReason 
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error canceling order:', error.response ? error.response.data : error.message);
+        throw error;
+    }
+};

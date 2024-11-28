@@ -3,6 +3,7 @@ import './Login.css';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { AppContext } from '../../services/AppContext';
+import { socket } from '../../services/socketio';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -45,7 +46,11 @@ const Login = () => {
 
       localStorage.setItem('token', response.data.accessToken);
       const userId = response.data._id;
-      localStorage.setItem('userId', userId);
+      await localStorage.setItem('userId', userId);
+      
+      socket.emit('registerUser',userId
+
+      )
 
       setState((prevState) => ({
         ...prevState,

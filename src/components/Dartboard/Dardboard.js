@@ -6,6 +6,14 @@ import { getAllProducts } from '../../services/ProductService';
 import { getAllOrder } from '../../services/OrderService';
 import './index.css';
 
+import io from 'socket.io-client';
+
+// Thay đổi URL này để phù hợp với server của bạn
+const socket = io('http://localhost:3000', {
+  transports: ['websocket'], // Sử dụng websocket để giảm độ trễ
+  jsonp: false,
+});
+
 Chart.register(...registerables);
 
 export default function Dashboard() {
@@ -21,6 +29,30 @@ export default function Dashboard() {
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
   const [endDate, setEndDate] = useState(new Date().toISOString().slice(0, 10));
   const [fetchedRevenue, setFetchedRevenue] = useState(0);
+
+  const [notifications, setNotifications] = useState([]);
+
+  useEffect(() => {
+    socket.on('connect', () => {
+      console.log('Connected to Socket.IO server:', socket.id);
+    });
+
+    socket.on('pushnotification', (data) => {
+      console.log('Push notification received:', data);
+      setNotifications((prev) => [...prev, data]);
+    });
+
+    socket.on('connect_error', (error) => {
+      console.error('Connection error:', error);
+    });
+
+    return () => {
+      socket.off('pushnotification');
+      socket.off('connect');
+      socket.off('connect_error');
+    };
+  }, []);
+
 
   const fetchTopSellingProducts = async () => {
     try {

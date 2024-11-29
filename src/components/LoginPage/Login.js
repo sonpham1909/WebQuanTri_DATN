@@ -3,6 +3,7 @@ import './Login.css';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { AppContext } from '../../services/AppContext';
+import { socket } from '../../services/socketIo';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -51,6 +52,8 @@ const Login = () => {
         ...prevState,
         user: { _id: userId, username: response.data.username, avatar: response.data.avatar },
       }));
+
+     
 
       setError(null);
       navigate('/Home');

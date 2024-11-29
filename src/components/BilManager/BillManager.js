@@ -119,6 +119,7 @@ const OrderManager = () => {
     { label: 'shipping', color: 'purple' },
     { label: 'delivered', color: 'green' },
     { label: 'canceled', color: 'red' },
+    { label: 'waiting_cancel', color: 'red' },
   ];
 
   const columns = [

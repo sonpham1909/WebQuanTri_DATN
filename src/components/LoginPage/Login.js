@@ -46,7 +46,11 @@ const Login = () => {
 
       localStorage.setItem('token', response.data.accessToken);
       const userId = response.data._id;
-      localStorage.setItem('userId', userId);
+      await localStorage.setItem('userId', userId);
+      
+      socket.emit('registerUser',userId
+
+      )
 
       setState((prevState) => ({
         ...prevState,

@@ -10,8 +10,10 @@ import AddressManager from '../AddressManager/AddressManager';
 import ReviewManager from '../ReviewManager/ReviewManager';
 import { useNavigate, useLocation } from 'react-router-dom';
 import PaymentMethodManager from '../PaymentMethodManager/PaymentMethodManager';
+import MessageManager from '../MessageManager/MessageManager';
 import axios from 'axios';
 import { AppContext } from '../../services/AppContext';
+
 
 
 function Home() {
@@ -78,8 +80,9 @@ function Home() {
           return <ReviewManager />;
           case 'item7':
             return <PaymentMethodManager />;
-      case 'item6':
-        return <ReviewManager />;
+            case 'item8':
+              return <MessageManager />;
+
       default:
         return 'Không tìm thấy nội dung';
     }
@@ -141,6 +144,12 @@ function Home() {
               onClick={() => handleSidebarItemClick('item7')}
             >
               Quản lý thanh toán
+            </li>
+            <li
+              className={selectedSidebarItem === 'item8' ? 'active' : ''}
+              onClick={() => handleSidebarItemClick('item8')}
+            >
+         Tin nhắn
             </li>
           </ul>
 

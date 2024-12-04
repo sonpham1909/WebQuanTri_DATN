@@ -289,9 +289,7 @@ const fetchUsers = async () => {
                 title={`Địa chỉ của ${selectedUser?.full_name}`}
                 onCancel={handleModalClose}
                 footer={[
-                    <Button key="add" type="primary" onClick={() => setIsAddAddressModalVisible(true)}>
-                        Thêm địa chỉ mới
-                    </Button>,
+                   
                 ]}
                 width={800}
             >
@@ -303,8 +301,7 @@ const fetchUsers = async () => {
                             renderItem={(item, index) => (
                                 <List.Item
                                     actions={[
-                                        <Button type="link" onClick={() => handleEditAddress(index)}>Sửa</Button>,
-                                        <Button type="link" onClick={() => handleDeleteAddress(index)}>Xóa</Button>,
+                                  
                                     ]}
                                     onDoubleClick={() => handleDoubleClickAddress(index)}
                                 >

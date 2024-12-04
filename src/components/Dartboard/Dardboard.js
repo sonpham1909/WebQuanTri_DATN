@@ -4,6 +4,7 @@ import { Chart, registerables } from 'chart.js';
 import { getTopSellingProducts } from '../../services/order_iteamServices';
 import { getAllProducts } from '../../services/ProductService';
 import { getAllOrder } from '../../services/OrderService';
+import { getAllUsers } from '../../services/UserService';
 import './index.css';
 
 import io from 'socket.io-client';
@@ -19,49 +20,94 @@ Chart.register(...registerables);
 export default function Dashboard() {
   const [topSellingProducts, setTopSellingProducts] = useState([]);
   const [allProducts, setAllProducts] = useState({});
+  const [users, setUsers] = useState([]);
   const [activeTab, setActiveTab] = useState("revenue");
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [totalRevenueAllTime, setTotalRevenueAllTime] = useState(0);
   const [monthlyRevenueData, setMonthlyRevenueData] = useState([]);
   const [hourlyRevenueData, setHourlyRevenueData] = useState(Array(25).fill(0));
-  const [dailyRevenueData, setDailyRevenueData] = useState(Array(8).fill(0));
+  const [dailyRevenueData, setDailyRevenueData] = useState(Array(7).fill(0));
   const [cancellationRateData, setCancellationRateData] = useState([0, 0]);
+  const [topCancelUsers, setTopCancelUsers] = useState([]);
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
   const [endDate, setEndDate] = useState(new Date().toISOString().slice(0, 10));
   const [fetchedRevenue, setFetchedRevenue] = useState(0);
-
-  const [notifications, setNotifications] = useState([]);
-
-  useEffect(() => {
-    socket.on('connect', () => {
-      console.log('Connected to Socket.IO server:', socket.id);
-    });
-
-    socket.on('pushnotification', (data) => {
-      console.log('Push notification received:', data);
-      setNotifications((prev) => [...prev, data]);
-    });
-
-    socket.on('connect_error', (error) => {
-      console.error('Connection error:', error);
-    });
-
-    return () => {
-      socket.off('pushnotification');
-      socket.off('connect');
-      socket.off('connect_error');
-    };
-  }, []);
-
-
+  const [totalOrders, setTotalOrders] = useState(0);
+  const [totalDeliveredOrders, setTotalDeliveredOrders] = useState(0);
+  
+  // New state variables for order statistics
+  const [totalOrdersToday, setTotalOrdersToday] = useState(0);
+  const [totalOrdersThisMonth, setTotalOrdersThisMonth] = useState(0);
+  const [totalOrdersThisYear, setTotalOrdersThisYear] = useState(0);
+  const [customFetchedRevenue, setCustomFetchedRevenue] = useState(0);
+  const [customTotalOrders, setCustomTotalOrders] = useState(0);
+  
   const fetchTopSellingProducts = async () => {
     try {
       const products = await getTopSellingProducts();
-      console.log("Sản phẩm bán chạy:", products);
       setTopSellingProducts(products);
     } catch (error) {
-      console.error("Lỗi khi lấy sản phẩm bán chạy:", error);
+      console.error("Error fetching top selling products:", error);
     }
+  };
+
+  const fetchTotalRevenueForToday = async () => {
+    const orders = await getAllOrder();
+    const today = new Date();
+    const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const endOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+
+    const todayOrders = orders.filter(order => {
+      const orderDate = new Date(order.updatedAt);
+      return orderDate >= startOfToday && orderDate < endOfToday && order.status === "delivered";
+    });
+
+    fetchTotalRevenue(todayOrders);
+  };
+
+  const fetchOrdersForStatistics = async () => {
+    const orders = await getAllOrder();
+    const today = new Date();
+  
+    // Tổng số đơn hàng hôm nay
+    const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const endOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+    const todayOrders = orders.filter(order => {
+      const orderDate = new Date(order.updatedAt);
+      return orderDate >= startOfToday && orderDate < endOfToday && order.status === "delivered"; // Lọc đơn hàng giao thành công
+    });
+    setTotalOrdersToday(todayOrders.length);
+  
+    // Tổng số đơn hàng trong tháng
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const monthlyOrders = orders.filter(order => {
+      const orderDate = new Date(order.updatedAt);
+      return orderDate >= startOfMonth && orderDate < new Date(today.getFullYear(), today.getMonth() + 1, 1) && order.status === "delivered"; // Lọc đơn hàng giao thành công
+    });
+    setTotalOrdersThisMonth(monthlyOrders.length);
+  
+    // Tổng số đơn hàng trong năm
+    const startOfYear = new Date(today.getFullYear(), 0, 1);
+    const yearlyOrders = orders.filter(order => {
+      const orderDate = new Date(order.updatedAt);
+      return orderDate >= startOfYear && orderDate < new Date(today.getFullYear() + 1, 0, 1) && order.status === "delivered"; // Lọc đơn hàng giao thành công
+    });
+    setTotalOrdersThisYear(yearlyOrders.length);
+  };
+
+  const fetchRevenueForCustomPeriod = async () => {
+    const orders = await getAllOrder();
+    const filteredOrders = orders.filter(order => {
+      const orderDate = new Date(order.updatedAt);
+      return orderDate >= new Date(startDate + "T00:00:00") 
+          && orderDate <= new Date(endDate + "T23:59:59") 
+          && order.status === "delivered";
+    });
+
+    const revenue = filteredOrders.reduce((total, order) => total + Number(order.total_amount), 0);
+    
+    setCustomFetchedRevenue(revenue);
+    setCustomTotalOrders(filteredOrders.length);
   };
 
   const fetchAllProducts = async () => {
@@ -71,56 +117,42 @@ export default function Dashboard() {
       products.forEach(product => {
         productMap[product._id] = product.name;
       });
-      console.log("Tất cả sản phẩm:", productMap);
       setAllProducts(productMap);
     } catch (error) {
-      console.error("Lỗi khi lấy tất cả sản phẩm:", error);
+      console.error("Error fetching all products:", error);
     }
   };
 
   const fetchTotalRevenue = (orders) => {
+    const deliveredOrders = orders.filter(order => order.status === "delivered");
+    const revenue = deliveredOrders.reduce((total, order) => total + Number(order.total_amount), 0);
+    
+    setTotalOrders(deliveredOrders.length);
+    setTotalRevenue(revenue);
+  };
+
+  const fetchAllUsers = async () => {
     try {
-      const deliveredOrders = orders.filter(order => order.status === "delivered");
-      const revenue = deliveredOrders.reduce((total, order) => total + Number(order.total_amount), 0);
-      console.log("Tổng doanh thu:", revenue);
-      setTotalRevenue(revenue);
-      setFetchedRevenue(revenue); // Cập nhật fetchedRevenue
+      const usersData = await getAllUsers();
+      setUsers(usersData);
     } catch (error) {
-      console.error("Lỗi khi lấy doanh thu tổng:", error);
+      console.error("Error fetching all users:", error);
     }
   };
-
-  const fetchRevenueForCustomPeriod = async () => {
-    const orders = await getAllOrder();
-    const filteredOrders = orders.filter(order => {
-      const orderDate = new Date(order.updateAt);
-      console.log(orderDate);
-
-      return orderDate >= new Date(startDate + "T00:00:00") && orderDate <= new Date(endDate + "T23:59:59") && order.status === "delivered";
-    });
-    fetchTotalRevenue(filteredOrders);
-  };
-
 
   const fetchTotalRevenueAllTime = async () => {
     const orders = await getAllOrder();
     const deliveredOrders = orders.filter(order => order.status === "delivered");
     const revenue = deliveredOrders.reduce((total, order) => total + Number(order.total_amount), 0);
+
+    setTotalOrders(deliveredOrders.length);
     setTotalRevenueAllTime(revenue);
   };
 
-  const fetchRevenueForToday = async () => {
+  const fetchTotalDeliveredOrders = async () => {
     const orders = await getAllOrder();
-
-    const today = new Date();
-    const todayOrders = orders.filter(order => {
-      const orderDate = new Date(order.createdAt);
-      return orderDate.getDate() === today.getDate() &&
-        orderDate.getMonth() === today.getMonth() &&
-        orderDate.getFullYear() === today.getFullYear() &&
-        order.status === "delivered";
-    });
-    fetchTotalRevenue(todayOrders);
+    const deliveredOrdersCount = orders.filter(order => order.status === "delivered").length;
+    setTotalDeliveredOrders(deliveredOrdersCount);
   };
 
   const fetchHourlyRevenueForToday = async () => {
@@ -128,66 +160,79 @@ export default function Dashboard() {
     const today = new Date();
     const hourlyRevenue = Array(24).fill(0);
 
-    if (!orders || !Array.isArray(orders)) {
-      console.error("No orders data available or data format is incorrect.");
-      return;
-    }
-
     orders.forEach(order => {
-      const orderDate = new Date(order.updatedAt); // Sử dụng createdAt hoặc updatedAt, tùy theo trường hợp
+      const orderDate = new Date(order.updatedAt);
       if (orderDate.getDate() === today.getDate() &&
-        orderDate.getMonth() === today.getMonth() &&
-        orderDate.getFullYear() === today.getFullYear() &&
-        order.status === "delivered") {
-
+          orderDate.getMonth() === today.getMonth() &&
+          orderDate.getFullYear() === today.getFullYear() &&
+          order.status === "delivered") {
         const hour = orderDate.getHours();
-        hourlyRevenue[hour] += Number(order.total_amount) || 0; // Sử dụng giá trị của total_amount nếu có
+        hourlyRevenue[hour] += Number(order.total_amount) || 0;
       }
     });
 
     const totalRevenue = hourlyRevenue.reduce((acc, curr) => acc + curr, 0);
     setHourlyRevenueData([...hourlyRevenue, totalRevenue]);
-    console.log("Hourly Revenue Data:", hourlyRevenue); // Kiểm tra dữ liệu doanh thu theo giờ
   };
 
-  const fetchRevenueForWeek = async () => {
+  const fetchMonthlyRevenueData = async () => {
     const orders = await getAllOrder();
-    console.log("Orders:", orders); // Kiểm tra dữ liệu trả về từ API
+    const monthlyRevenue = Array(12).fill(0);
 
-    const today = new Date();
-    const startOfWeek = new Date();
-
-    startOfWeek.setDate(today.getDate() - today.getDay());
-    console.log("Start of the week:", startOfWeek, "Today:", today); // Kiểm tra giá trị startOfWeek và today
-
-    if (!orders || !Array.isArray(orders)) {
-      console.error("No orders data available or data format is incorrect.");
-      return;
-    }
-
-    const weekOrders = orders.filter(order => {
-      const orderDate = new Date(order.updatedAt); // Sử dụng đúng trường updatedAt hoặc createdAt
-      console.log("Order Date:", orderDate); // Kiểm tra từng ngày đặt hàng
-
-      return orderDate >= startOfWeek && orderDate <= today && order.status === "delivered";
+    orders.forEach(order => {
+      const orderDate = new Date(order.updatedAt);
+      if (order.status === "delivered") {
+        const month = orderDate.getMonth();
+        monthlyRevenue[month] += Number(order.total_amount);
+      }
     });
 
-    console.log("Filtered Week Orders:", weekOrders); // Kiểm tra đơn hàng đã được lọc
+    const totalRevenue = monthlyRevenue.reduce((acc, curr) => acc + curr, 0);
+    setMonthlyRevenueData([...monthlyRevenue, totalRevenue]);
+  };
 
-    fetchTotalRevenue(weekOrders);
-    fetchDailyRevenueForWeek(weekOrders);
+  const fetchCancellationRateData = async () => {
+    const orders = await getAllOrder();
+    const deliveredOrdersCount = orders.filter(order => order.status === "delivered").length;
+    const canceledOrdersCount = orders.filter(order => order.status === "canceled").length;
+
+    setCancellationRateData([deliveredOrdersCount, canceledOrdersCount]);
+
+    const userCancellationCounts = {};
+    orders.forEach(order => {
+      if (order.status === "canceled" && order.user_id) {
+        const userId = order.user_id._id.toString();
+        userCancellationCounts[userId] = (userCancellationCounts[userId] || 0) + 1;
+      }
+    });
+
+    const sortedUsers = Object.entries(userCancellationCounts)
+      .sort(([, countA], [, countB]) => countB - countA)
+      .slice(0, 5);
+
+    const topUsersWithNames = sortedUsers.map(([userId, count]) => {
+      const user = users.find(u => u._id.toString() === userId);
+      return {
+        userId,
+        userName: user ? user.username : 'Unknown',
+        canceledCount: count,
+      };
+    });
+
+    setTopCancelUsers(topUsersWithNames);
   };
 
   const fetchDailyRevenueForWeek = (orders) => {
     const dailyRevenue = Array(7).fill(0);
     const today = new Date();
+    const todayDay = today.getDay();
 
     orders.forEach(order => {
-      const orderDate = new Date(order.createdAt);
-      const dayDiff = today.getDay() - orderDate.getDay() + (today.getFullYear() - orderDate.getFullYear()) * 7;
+      const orderDate = new Date(order.updatedAt);
+      const orderDay = orderDate.getDay();
 
-      if (dayDiff >= 0 && dayDiff < 7) {
-        dailyRevenue[(today.getDay() - dayDiff + 7) % 7] += Number(order.total_amount);
+      if (orderDate >= new Date(today.getFullYear(), today.getMonth(), today.getDate() - todayDay) && order.status === "delivered") {
+        dailyRevenue[orderDay] += Number(order.total_amount);
       }
     });
 
@@ -195,49 +240,23 @@ export default function Dashboard() {
     setDailyRevenueData([...dailyRevenue, totalRevenue]);
   };
 
-
-
-
-
-  const fetchMonthlyRevenueData = async () => {
-    try {
-      const orders = await getAllOrder();
-      const deliveredOrders = orders.filter(order => order.status === "delivered");
-      const monthlyRevenue = Array(12).fill(0);
-
-      deliveredOrders.forEach(order => {
-        const orderDate = new Date(order.createdAt);
-        const month = orderDate.getMonth();
-        monthlyRevenue[month] += Number(order.total_amount);
-      });
-
-      const totalRevenue = monthlyRevenue.reduce((acc, curr) => acc + curr, 0);
-      setMonthlyRevenueData([...monthlyRevenue, totalRevenue]);
-    } catch (error) {
-      console.error("Lỗi khi lấy dữ liệu doanh thu hàng tháng:", error);
-    }
-  };
-
-  const fetchCancellationRateData = async () => {
-    try {
-      const orders = await getAllOrder();
-      const deliveredOrders = orders.filter(order => order.status === "delivered").length;
-      const canceledOrders = orders.filter(order => order.status === "canceled").length;
-
-      setCancellationRateData([deliveredOrders, canceledOrders]);
-    } catch (error) {
-      console.error("Lỗi khi lấy dữ liệu tỉ lệ hủy nhận hàng:", error);
-    }
+  const fetchRevenueForWeek = async () => {
+    const orders = await getAllOrder();
+    fetchDailyRevenueForWeek(orders);
   };
 
   useEffect(() => {
     fetchAllProducts();
+    fetchAllUsers();
     fetchTotalRevenueAllTime();
+    fetchTotalDeliveredOrders(); // New line
+    fetchOrdersForStatistics(); // New line
+
     if (activeTab === "topProducts") {
       fetchTopSellingProducts();
     }
     if (activeTab === "revenue") {
-      fetchTotalRevenue();
+      fetchTotalRevenueForToday();
       fetchMonthlyRevenueData();
       fetchHourlyRevenueForToday();
       fetchRevenueForWeek();
@@ -271,21 +290,23 @@ export default function Dashboard() {
               </label>
               <button onClick={fetchRevenueForCustomPeriod}>Lấy doanh thu</button>
               <br />
-              <label>
-                Doanh thu lấy được:
-              </label>
-              <h3>{fetchedRevenue.toLocaleString()} VND</h3> {/* Hiển thị doanh thu lấy được */}
+              <label>Doanh thu lấy được:</label>
+              <h3>{customFetchedRevenue.toLocaleString()} VND/{customTotalOrders} Đơn hàng</h3>
             </div>
-            <h3>Tổng doanh thu: {totalRevenueAllTime.toLocaleString()} VND</h3>
-            <br></br>
-            <h3>DOANH THU NGAY HÔM NAY</h3>
+            <h3>Tổng doanh thu: {totalRevenueAllTime > 0 ? totalRevenueAllTime.toLocaleString() : "Chưa có dữ liệu"} VND</h3>
+            <h3>Tổng số đơn hàng đã giao thành công: {totalDeliveredOrders}</h3>
+            <h3>Tổng số đơn hàng hôm nay: {totalOrdersToday}</h3> {/* New line */}
+            <h3>Tổng số đơn hàng trong tháng: {totalOrdersThisMonth}</h3> {/* New line */}
+            <h3>Tổng số đơn hàng trong năm: {totalOrdersThisYear}</h3> {/* New line */}
+            <br />
+            <h3>DOANH THU NGÀY HÔM NAY</h3>
             <Bar
               data={{
-                labels: [...Array(24).fill().map((_, i) => `${i}h`), 'Tổng'], // thêm 'Tổng' vào labels
+                labels: [...Array(24).fill().map((_, i) => `${i}h`), 'Tổng'],
                 datasets: [
                   {
                     label: 'Doanh thu theo giờ',
-                    data: [...hourlyRevenueData, totalRevenue], // sử dụng mảng có tổng
+                    data: [...hourlyRevenueData, hourlyRevenueData.reduce((acc, curr) => acc + curr, 0)],
                     backgroundColor: hourlyRevenueData.map((_, index) => index === 24 ? 'rgba(0, 128, 0, 0.6)' : 'rgba(153, 102, 255, 0.6)'),
                   },
                 ],
@@ -299,7 +320,7 @@ export default function Dashboard() {
                 },
               }}
             />
-            <br></br>
+            <br />
             <h3>DOANH THU TUẦN NAY</h3>
             <Bar
               data={{
@@ -342,10 +363,6 @@ export default function Dashboard() {
                 },
               }}
             />
-
-
-
-
           </div>
         )}
 
@@ -355,27 +372,25 @@ export default function Dashboard() {
             <ul className="top-products-list">
               {topSellingProducts.map((product, index) => {
                 const productName = allProducts[product._id];
-                console.log(`Product ID: ${product._id}, Product Name: ${productName}`);
                 return (
                   <li key={product._id}>
-                    {/* Hiển thị biểu tượng cúp tương ứng với vị trí và màu sắc */}
                     {index === 0 && (
                       <img
-                        src="https://img.icons8.com/color/480/trophy.png" // Cúp vàng
+                        src="https://img.icons8.com/color/480/trophy.png"
                         alt="Cúp vàng"
                         className={`trophy-icon trophy-gold`}
                       />
                     )}
                     {index === 1 && (
                       <img
-                        src="https://img.pikbest.com/png-images/20240606/silver-trophy-cup_10600171.png!w700wp" // Cúp bạc
+                        src="https://img.pikbest.com/png-images/20240606/silver-trophy-cup_10600171.png!w700wp"
                         alt="Cúp bạc"
                         className={`trophy-icon trophy-silver`}
                       />
                     )}
                     {index === 2 && (
                       <img
-                        src="https://img.lovepik.com/free-png/20220120/lovepik-silver-trophy-png-image_401543541_wh860.png" // Cúp đồng
+                        src="https://img.lovepik.com/free-png/20220120/lovepik-silver-trophy-png-image_401543541_wh860.png"
                         alt="Cúp đồng"
                         className={`trophy-icon trophy-bronze`}
                       />
@@ -391,11 +406,8 @@ export default function Dashboard() {
           </div>
         )}
 
-
-
-
         {activeTab === "cancellationRate" && (
-          <div style={{ width: '600px', height: '700px', margin: '0 auto' }}>
+          <div style={{ width: '600px', margin: '0 auto' }}>
             <h2>Tỉ lệ hủy nhận hàng</h2>
             <Pie
               data={{
@@ -413,8 +425,20 @@ export default function Dashboard() {
                   },
                 },
               }}
-
             />
+
+            <h3>Người dùng có tỷ lệ hủy hàng nhiều nhất</h3>
+            <ul>
+              {topCancelUsers.length === 0 ? (
+                <li>Không có người dùng nào hủy đơn hàng.</li>
+              ) : (
+                topCancelUsers.map(({ userId, userName, canceledCount }) => (
+                  <li key={userId}>
+                    Người dùng ID: {userId} - Tên: {userName} - Số lượng đơn hàng bị hủy: {canceledCount}
+                  </li>
+                ))
+              )}
+            </ul>
           </div>
         )}
       </div>

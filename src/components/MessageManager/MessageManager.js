@@ -1,4 +1,3 @@
-// src/MessageManager/MessageManager.js
 import React, { useEffect, useState } from 'react';
 import { Input, Button, List, Avatar, message, Row, Col, Upload } from 'antd';
 import { SearchOutlined, UploadOutlined, CloseCircleOutlined } from '@ant-design/icons';
@@ -19,60 +18,23 @@ const MessageManager = () => {
     const [newReply, setNewReply] = useState('');
     const [newReplyImage, setNewReplyImage] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [repliedUsers, setRepliedUsers] = useState(new Set());
 
+    // Fetch users and messages on component mount
     useEffect(() => {
         fetchUsersAndMessages();
     }, []);
-    const [notification, setNotification] = useState([]);
-
-
-    useEffect(() => {
-      // Kiểm tra kết nối và lắng nghe sự kiện 'pushnotification' từ server
-      socket.on('pushnotification', (data) => {
-        // Log dữ liệu từ server
-        // Cập nhật state để thêm thông báo mới vào danh sách
-        setNotification((prev) => [...prev, data]);
-        alert('Updated notification state:', [...notification, data]); // Thêm log để kiểm tra
-      });
-  
-      // Cleanup: Gỡ bỏ các listener khi component bị unmount
-      return () => {
-        socket.off('pushnotification');
-      };
-    }, [notification]);
-
 
     const fetchUsersAndMessages = async () => {
         setLoadingUsers(true);
         setLoadingMessages(true);
         try {
             const [allUsers, allMessages] = await Promise.all([getAllUsers(), getAllMessages()]);
-            
-            // Filter users with messages
-            const userIdsWithMessages = [...new Set(allMessages.map(message => message.user_id))];
-            const usersWithMessages = allUsers.filter(user => userIdsWithMessages.includes(user._id));
-    
-            // Create a map to get the latest message for each user
-            const latestMessagesMap = {};
-            allMessages.forEach(message => {
-                if (!latestMessagesMap[message.user_id] || new Date(message.createdAt) > new Date(latestMessagesMap[message.user_id].createdAt)) {
-                    latestMessagesMap[message.user_id] = message;
-                }
-            });
-    
-            // Check for unread messages and sort users
-            const usersWithUnreadMessages = usersWithMessages.map(user => {
-                const latestMessage = latestMessagesMap[user._id];
-                const hasUnreadMessages = latestMessage && !latestMessage.status; // Check the latest message status
-                return { ...user, hasUnreadMessages, latestMessageDate: latestMessage ? new Date(latestMessage.createdAt) : null };
-            }).filter(user => user.latestMessageDate !== null) // Filter out users with no messages
-    
-            // Sort users by the date of their latest message, descending
-            usersWithUnreadMessages.sort((a, b) => b.latestMessageDate - a.latestMessageDate);
-    
-            setUsers(usersWithUnreadMessages);
-            setMessages(allMessages);
-            fetchRepliesForMessages(allMessages);
+            const uniqueMessages = filterDuplicateMessages(allMessages);
+            const usersWithMessages = getUsersWithMessages(allUsers, uniqueMessages);
+            setUsers(usersWithMessages);
+            setMessages(uniqueMessages);
+            await fetchRepliesForMessages(uniqueMessages);
         } catch (error) {
             message.error('Không thể tải người dùng hoặc tin nhắn');
             console.error('Lỗi khi lấy người dùng hoặc tin nhắn:', error);
@@ -82,43 +44,123 @@ const MessageManager = () => {
         }
     };
 
+    const filterDuplicateMessages = (messages) => {
+        const seen = new Set();
+        return messages.filter(message => {
+            const key = `${message.user_id}-${message.content}-${message.createdAt}`;
+            if (seen.has(key)) {
+                return false; // Duplicate found
+            }
+            seen.add(key);
+            return true; // Unique message
+        });
+    };
+
+    const getUsersWithMessages = (allUsers, uniqueMessages) => {
+        const userIdsWithMessages = [...new Set(uniqueMessages.map(message => message.user_id))];
+        const usersWithMessages = allUsers.filter(user => userIdsWithMessages.includes(user._id));
+
+        const latestMessagesMap = {};
+        uniqueMessages.forEach(message => {
+            if (!latestMessagesMap[message.user_id] || new Date(message.createdAt) > new Date(latestMessagesMap[message.user_id].createdAt)) {
+                latestMessagesMap[message.user_id] = message;
+            }
+        });
+
+        return usersWithMessages.map(user => {
+            const latestMessage = latestMessagesMap[user._id];
+            const hasUnreadMessages = latestMessage && !latestMessage.status;
+            return { ...user, hasUnreadMessages, latestMessageDate: latestMessage ? new Date(latestMessage.createdAt) : null };
+        }).filter(user => user.latestMessageDate !== null)
+          .sort((a, b) => b.latestMessageDate - a.latestMessageDate);
+    };
+
     const fetchRepliesForMessages = async (messages) => {
         try {
             const repliesMap = {};
-            for (const message of messages) {
+            await Promise.all(messages.map(async (message) => {
                 const messageReplies = await getRepliesByMessageId(message._id);
                 repliesMap[message._id] = messageReplies.map(reply => ({
                     ...reply,
                     isRecalled: reply.isRecalled || false
                 }));
-            }
+            }));
             setReplies(repliesMap);
         } catch (error) {
             message.error('Không thể tải phản hồi');
             console.error('Lỗi khi lấy phản hồi:', error);
         }
     };
-
     const handleUserClick = async (user_id) => {
         setSelectedUserId(user_id);
         try {
-            const latestMessage = messages
-                .filter(message => message.user_id === user_id)
-                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
-
+            const userMessages = messages.filter(message => message.user_id === user_id);
+            
+            if (userMessages.length === 0) {
+                console.log('Người dùng chưa gửi tin nhắn nào.');
+                return; // Không có tin nhắn để cập nhật
+            }
+    
+            const latestMessage = userMessages.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+    
             if (!latestMessage) {
                 message.error('Không tìm thấy tin nhắn để cập nhật');
                 return;
             }
-
+    
+            // Cập nhật trạng thái cho tất cả tin nhắn
             await updateMessage(latestMessage._id, { status: true });
             fetchUsersAndMessages();
+    
+            // Gửi phản hồi tự động chỉ nếu đây là tin nhắn đầu tiên
+            if (userMessages.length === 1 && !repliedUsers.has(latestMessage._id)) {
+                await sendAutomaticReply(user_id);
+                setRepliedUsers(prev => new Set(prev).add(latestMessage._id)); // Đánh dấu tin nhắn đã được phản hồi
+            }
         } catch (error) {
             message.error('Không thể cập nhật trạng thái tin nhắn');
             console.error('Lỗi khi cập nhật trạng thái tin nhắn:', error);
         }
     };
-
+    const sendAutomaticReply = async (user_id) => {
+        const content = "Chào bạn, chúng tôi có thể giúp gì cho bạn?";
+        const userMessages = messages.filter(message => message.user_id === user_id);
+    
+        // Chỉ gửi phản hồi tự động cho tin nhắn đầu tiên
+        if (userMessages.length > 1) {
+            console.log('Người dùng đã gửi nhiều tin nhắn, không gửi phản hồi tự động.');
+            return; // Không gửi phản hồi nếu không phải là tin nhắn đầu tiên
+        }
+    
+        const latestMessage = userMessages[0]; // Lấy tin nhắn đầu tiên
+    
+        if (!latestMessage) {
+            message.error('Không tìm thấy tin nhắn để phản hồi');
+            return;
+        }
+    
+        // Kiểm tra xem phản hồi tự động đã được gửi chưa
+        const existingReplies = replies[latestMessage._id] || [];
+        const hasSentAutomaticReply = existingReplies.some(reply => reply.content === content);
+    
+        if (hasSentAutomaticReply) {
+            console.log('Đã gửi phản hồi tự động trước đó, không gửi lại.');
+            return; // Không gửi lại phản hồi
+        }
+    
+        try {
+            const formData = new FormData();
+            formData.append('content', content);
+            formData.append('user_id', user_id);
+            formData.append('message_id', latestMessage._id);
+    
+            await createReply(formData);
+            message.success('Phản hồi tự động đã được gửi');
+        } catch (error) {
+            message.error('Không thể gửi phản hồi tự động');
+            console.error('Lỗi khi gửi phản hồi tự động:', error);
+        }
+    };
     const handleReplySubmit = async () => {
         if ((!newReply.trim() && !newReplyImage) || !selectedUserId) {
             message.error('Vui lòng đảm bảo tất cả các trường bắt buộc đã được điền');
@@ -135,16 +177,17 @@ const MessageManager = () => {
         }
 
         try {
-            let imageUrl = newReplyImage ? URL.createObjectURL(newReplyImage) : null;
+            const formData = new FormData();
+            if (newReply.trim()) {
+                formData.append('content', newReply.trim());
+            }
+            if (newReplyImage) {
+                formData.append('imageUrls', newReplyImage);
+            }
+            formData.append('user_id', selectedUserId);
+            formData.append('message_id', latestMessage._id);
 
-            const replyData = {
-                content: newReply.trim() ? newReply : null,
-                user_id: selectedUserId,
-                message_id: latestMessage._id,
-                img: imageUrl
-            };
-
-            await createReply(replyData);
+            await createReply(formData);
             setNewReply('');
             setNewReplyImage(null);
             fetchUsersAndMessages();
@@ -255,7 +298,6 @@ const MessageManager = () => {
                                                         {item.img && (
                                                             <img
                                                                 src={item.img}
-                                                                alt="tin nhắn-img"
                                                                 style={{
                                                                     maxWidth: '150px',
                                                                     borderRadius: '8px',

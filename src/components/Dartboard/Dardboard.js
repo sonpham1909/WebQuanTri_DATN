@@ -24,7 +24,16 @@ export default function Dashboard() {
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
   const [endDate, setEndDate] = useState(new Date().toISOString().slice(0, 10));
   const [fetchedRevenue, setFetchedRevenue] = useState(0);
-
+  const [totalOrders, setTotalOrders] = useState(0);
+  const [totalDeliveredOrders, setTotalDeliveredOrders] = useState(0);
+  
+  // New state variables for order statistics
+  const [totalOrdersToday, setTotalOrdersToday] = useState(0);
+  const [totalOrdersThisMonth, setTotalOrdersThisMonth] = useState(0);
+  const [totalOrdersThisYear, setTotalOrdersThisYear] = useState(0);
+  const [customFetchedRevenue, setCustomFetchedRevenue] = useState(0);
+  const [customTotalOrders, setCustomTotalOrders] = useState(0);
+  
   const fetchTopSellingProducts = async () => {
     try {
       const products = await getTopSellingProducts();
@@ -44,8 +53,40 @@ export default function Dashboard() {
       const orderDate = new Date(order.updatedAt);
       return orderDate >= startOfToday && orderDate < endOfToday && order.status === "delivered";
     });
+
     fetchTotalRevenue(todayOrders);
   };
+
+  const fetchOrdersForStatistics = async () => {
+    const orders = await getAllOrder();
+    const today = new Date();
+  
+    // Tổng số đơn hàng hôm nay
+    const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const endOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+    const todayOrders = orders.filter(order => {
+      const orderDate = new Date(order.updatedAt);
+      return orderDate >= startOfToday && orderDate < endOfToday && order.status === "delivered"; // Lọc đơn hàng giao thành công
+    });
+    setTotalOrdersToday(todayOrders.length);
+  
+    // Tổng số đơn hàng trong tháng
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const monthlyOrders = orders.filter(order => {
+      const orderDate = new Date(order.updatedAt);
+      return orderDate >= startOfMonth && orderDate < new Date(today.getFullYear(), today.getMonth() + 1, 1) && order.status === "delivered"; // Lọc đơn hàng giao thành công
+    });
+    setTotalOrdersThisMonth(monthlyOrders.length);
+  
+    // Tổng số đơn hàng trong năm
+    const startOfYear = new Date(today.getFullYear(), 0, 1);
+    const yearlyOrders = orders.filter(order => {
+      const orderDate = new Date(order.updatedAt);
+      return orderDate >= startOfYear && orderDate < new Date(today.getFullYear() + 1, 0, 1) && order.status === "delivered"; // Lọc đơn hàng giao thành công
+    });
+    setTotalOrdersThisYear(yearlyOrders.length);
+  };
+
   const fetchRevenueForCustomPeriod = async () => {
     const orders = await getAllOrder();
     const filteredOrders = orders.filter(order => {
@@ -54,13 +95,13 @@ export default function Dashboard() {
           && orderDate <= new Date(endDate + "T23:59:59") 
           && order.status === "delivered";
     });
-  
-    // Tính tổng doanh thu từ các đơn hàng đã lọc
+
     const revenue = filteredOrders.reduce((total, order) => total + Number(order.total_amount), 0);
     
-    setFetchedRevenue(revenue);
-    console.log("Tổng doanh thu cho khoảng thời gian đã chọn:", revenue);
+    setCustomFetchedRevenue(revenue);
+    setCustomTotalOrders(filteredOrders.length);
   };
+
   const fetchAllProducts = async () => {
     try {
       const products = await getAllProducts();
@@ -75,17 +116,11 @@ export default function Dashboard() {
   };
 
   const fetchTotalRevenue = (orders) => {
-    // Lọc để chỉ bao gồm các đơn hàng có trạng thái "delivered"
     const deliveredOrders = orders.filter(order => order.status === "delivered");
-  
-    // Tính tổng doanh thu từ các đơn hàng đã giao
     const revenue = deliveredOrders.reduce((total, order) => total + Number(order.total_amount), 0);
-  
-    // Cập nhật trạng thái tổng doanh thu
+    
+    setTotalOrders(deliveredOrders.length);
     setTotalRevenue(revenue);
-  
-    // Ghi log doanh thu đã tính cho việc gỡ lỗi
-    console.log("Tổng doanh thu từ các đơn hàng đã giao:", revenue);
   };
 
   const fetchAllUsers = async () => {
@@ -97,14 +132,19 @@ export default function Dashboard() {
     }
   };
 
-
-
   const fetchTotalRevenueAllTime = async () => {
     const orders = await getAllOrder();
-    // Lọc để chỉ tính doanh thu từ các đơn hàng đã giao
     const deliveredOrders = orders.filter(order => order.status === "delivered");
     const revenue = deliveredOrders.reduce((total, order) => total + Number(order.total_amount), 0);
+
+    setTotalOrders(deliveredOrders.length);
     setTotalRevenueAllTime(revenue);
+  };
+
+  const fetchTotalDeliveredOrders = async () => {
+    const orders = await getAllOrder();
+    const deliveredOrdersCount = orders.filter(order => order.status === "delivered").length;
+    setTotalDeliveredOrders(deliveredOrdersCount);
   };
 
   const fetchHourlyRevenueForToday = async () => {
@@ -201,6 +241,8 @@ export default function Dashboard() {
     fetchAllProducts();
     fetchAllUsers();
     fetchTotalRevenueAllTime();
+    fetchTotalDeliveredOrders(); // New line
+    fetchOrdersForStatistics(); // New line
 
     if (activeTab === "topProducts") {
       fetchTopSellingProducts();
@@ -241,9 +283,13 @@ export default function Dashboard() {
               <button onClick={fetchRevenueForCustomPeriod}>Lấy doanh thu</button>
               <br />
               <label>Doanh thu lấy được:</label>
-              <h3>{fetchedRevenue.toLocaleString()} VND</h3>
+              <h3>{customFetchedRevenue.toLocaleString()} VND/{customTotalOrders} Đơn hàng</h3>
             </div>
             <h3>Tổng doanh thu: {totalRevenueAllTime > 0 ? totalRevenueAllTime.toLocaleString() : "Chưa có dữ liệu"} VND</h3>
+            <h3>Tổng số đơn hàng đã giao thành công: {totalDeliveredOrders}</h3>
+            <h3>Tổng số đơn hàng hôm nay: {totalOrdersToday}</h3> {/* New line */}
+            <h3>Tổng số đơn hàng trong tháng: {totalOrdersThisMonth}</h3> {/* New line */}
+            <h3>Tổng số đơn hàng trong năm: {totalOrdersThisYear}</h3> {/* New line */}
             <br />
             <h3>DOANH THU NGÀY HÔM NAY</h3>
             <Bar

@@ -20,7 +20,7 @@ const MessageManager = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [repliedUsers, setRepliedUsers] = useState(new Set());
 
-    // Fetch users and messages on component mount
+   
     useEffect(() => {
         fetchUsersAndMessages();
     }, []);

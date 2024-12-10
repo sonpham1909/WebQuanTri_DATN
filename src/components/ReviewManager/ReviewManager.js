@@ -1,30 +1,33 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Input, Modal, Button } from 'antd';
+import { Table, Input, Modal, Button, message } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
-import { getAllProducts, } from '../../services/ProductService';
-import { getAllReviews } from '../../services/ReviewServices';
-import { getAllUsers } from '../../services/UserService';
+import { getAllProducts } from '../../services/ProductService';
+import { getAllReviews, deleteReview } from '../../services/ReviewServices';
+import { getAllUsers, updateUser } from '../../services/UserService';
 import { addResponse, getAllResponses, deleteResponse, updateResponse } from '../../services/ResponseReviewServices';
 import LoadingCo from '../loading/loading';
+import { useNavigate } from 'react-router-dom';
 
 const ReviewManager = () => {
-  const [products, setProducts] = useState([]); // Dữ liệu sản phẩm
-  const [loading, setLoading] = useState(true); // Trạng thái loading
-  const [currentPage, setCurrentPage] = useState(1); // Trang hiện tại
-  const [reviews, setReviews] = useState([]); // Đánh giá của sản phẩm
-  const [users, setUsers] = useState([]); // Dữ liệu người dùng
-  const [isModalVisible, setIsModalVisible] = useState(false); // Trạng thái hiển thị modal
-  const [responseText, setResponseText] = useState(''); // Nội dung phản hồi
-  const [currentReviewId, setCurrentReviewId] = useState(null); // ID đánh giá hiện tại
-  const [selectedResponse, setSelectedResponse] = useState(null); // Phản hồi được chọn cho sửa/xóa
-  const [isResponseModalVisible, setIsResponseModalVisible] = useState(false); // Trạng thái modal phản hồi
-  const [newResponseText, setNewResponseText] = useState(''); // Nội dung phản hồi mới cho sửa
-  const [isConfirmDeleteVisible, setIsConfirmDeleteVisible] = useState(false); // Modal xác nhận xóa
-  const [searchTerm, setSearchTerm] = useState(''); // Trạng thái từ khóa tìm kiếm
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [reviews, setReviews] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [responseText, setResponseText] = useState('');
+  const [currentReviewId, setCurrentReviewId] = useState(null);
+  const [selectedResponse, setSelectedResponse] = useState(null);
+  const [isResponseModalVisible, setIsResponseModalVisible] = useState(false);
+  const [newResponseText, setNewResponseText] = useState('');
+  const [isConfirmDeleteVisible, setIsConfirmDeleteVisible] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isConfirmDeleteReviewVisible, setIsConfirmDeleteReviewVisible] = useState(false);
+  const [currentReviewToDelete, setCurrentReviewToDelete] = useState(null);
+  const [isUserInfoVisible, setIsUserInfoVisible] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const pageSize = 5;
 
-  const pageSize = 5; // Số mục trên mỗi trang
-
-  // Hàm lấy danh sách sản phẩm
   const fetchProducts = async () => {
     try {
       const data = await getAllProducts();
@@ -36,7 +39,6 @@ const ReviewManager = () => {
     }
   };
 
-  // Hàm lấy danh sách người dùng
   const fetchUsers = async () => {
     try {
       const data = await getAllUsers();
@@ -46,25 +48,20 @@ const ReviewManager = () => {
     }
   };
 
-  // Hàm lấy đánh giá cho sản phẩm được chọn
   const fetchReviews = async (productId) => {
     try {
       const allReviews = await getAllReviews();
       const filteredReviews = allReviews.filter(review => review.product_id === productId);
       const reviewsWithUserInfo = await Promise.all(filteredReviews.map(async (review) => {
         const user = users.find(user => user._id === review.user_id);
-
-        // Lấy phản hồi cho đánh giá này
         const reviewResponses = await getAllResponses(review._id);
-
         return {
           ...review,
           userName: user ? user.full_name : 'Không rõ',
           avatarUrl: user ? user.avatar : '',
-          responses: reviewResponses.filter(response => response.review_id === review._id) // Chỉ lấy phản hồi có review_id trùng khớp
+          responses: reviewResponses.filter(response => response.review_id === review._id)
         };
       }));
-
       setReviews(reviewsWithUserInfo);
       setIsModalVisible(true);
     } catch (error) {
@@ -72,23 +69,18 @@ const ReviewManager = () => {
     }
   };
 
-  // Gọi hàm lấy sản phẩm và người dùng khi component mount
   useEffect(() => {
     fetchProducts();
     fetchUsers();
   }, []);
 
-  // Xử lý khi gửi phản hồi
   const handleResponseSubmit = async () => {
     const userId = localStorage.getItem('userId');
-
     if (currentReviewId && responseText && userId) {
       try {
         await addResponse({ review_id: currentReviewId, user_id: userId, comment: responseText });
         setResponseText('');
         setCurrentReviewId(null);
-
-        // Cập nhật lại đánh giá để lấy phản hồi mới
         fetchReviews(reviews.find(review => review._id === currentReviewId).product_id);
       } catch (error) {
         console.error('Không thể thêm phản hồi', error);
@@ -98,59 +90,107 @@ const ReviewManager = () => {
     }
   };
 
-  // Hàm xử lý việc nhấn giữ phản hồi
   const handleResponseLongPress = (response) => {
     setSelectedResponse(response);
-    setNewResponseText(response.comment); // Đặt nội dung phản hồi hiện tại vào ô nhập
+    setNewResponseText(response.comment);
     setIsResponseModalVisible(true);
   };
 
-  // Hàm xử lý mở modal xác nhận xóa
   const openConfirmDeleteModal = () => {
     setIsConfirmDeleteVisible(true);
   };
 
-  // Hàm xử lý xóa phản hồi
   const handleDeleteResponse = async () => {
     if (selectedResponse) {
       try {
         await deleteResponse(selectedResponse._id);
-        // Cập nhật lại danh sách phản hồi sau khi xóa
         fetchReviews(reviews.find(review => review._id === selectedResponse.review_id).product_id);
       } catch (error) {
         console.error('Không thể xóa phản hồi', error);
       }
       setIsResponseModalVisible(false);
       setSelectedResponse(null);
-      setIsConfirmDeleteVisible(false); // Đóng modal xác nhận sau khi xóa
+      setIsConfirmDeleteVisible(false);
     }
   };
 
-  // Hàm xử lý xác nhận xóa
   const handleConfirmDelete = () => {
     handleDeleteResponse();
   };
 
-  // Hàm xử lý cập nhật phản hồi
   const handleUpdateResponse = async () => {
     if (selectedResponse) {
       try {
         await updateResponse(selectedResponse._id, { comment: newResponseText });
-        // Cập nhật lại danh sách phản hồi sau khi cập nhật
         fetchReviews(reviews.find(review => review._id === selectedResponse.review_id).product_id);
       } catch (error) {
         console.error('Không thể cập nhật phản hồi', error);
       }
       setIsResponseModalVisible(false);
       setSelectedResponse(null);
-      setNewResponseText(''); // Reset nội dung phản hồi mới
+      setNewResponseText('');
     }
   };
+
   const handleSearch = (e) => {
-    setSearchTerm(e.target.value); // Cập nhật từ khóa tìm kiếm
+    setSearchTerm(e.target.value);
   };
 
-  // Định nghĩa các cột cho bảng sản phẩm
+  const openConfirmDeleteReviewModal = (reviewId) => {
+    setCurrentReviewToDelete(reviewId);
+    setIsConfirmDeleteReviewVisible(true);
+  };
+
+  const handleDeleteReview = async () => {
+    if (currentReviewToDelete) {
+      try {
+        await deleteReview(currentReviewToDelete);
+        fetchReviews(reviews.find(review => review._id === currentReviewToDelete).product_id);
+      } catch (error) {
+        console.error('Không thể xóa đánh giá', error);
+      }
+      setIsConfirmDeleteReviewVisible(false);
+      setCurrentReviewToDelete(null);
+    }
+  };
+
+  const handleAvatarClick = (user) => {
+    setSelectedUser(user);
+    setIsUserInfoVisible(true);
+  };
+
+  const handleBlockUser = async (userId) => {
+    if (selectedUser && selectedUser.block === false) {
+        try {
+            await updateUser(userId, { block: true }); // Chặn người dùng
+            message.success('Người dùng đã bị chặn thành công.'); // Thông báo thành công
+        } catch (error) {
+            console.error('Không thể chặn người dùng', error);
+            message.error('Có lỗi xảy ra khi chặn người dùng.'); // Thông báo lỗi
+        } finally {
+            fetchUsers(); // Cập nhật danh sách người dùng
+            setSelectedUser(prev => ({ ...prev, block: true })); // Cập nhật trạng thái chặn trong modal
+        }
+    }
+};
+
+const handleUnblockUser = async (userId) => {
+    if (selectedUser && selectedUser.block === true) {
+        try {
+            await updateUser(userId, { block: false }); // Bỏ chặn người dùng
+            message.success('Người dùng đã được bỏ chặn thành công.'); // Thông báo thành công
+        } catch (error) {
+            console.error('Không thể bỏ chặn người dùng', error);
+            message.error('Có lỗi xảy ra khi bỏ chặn người dùng.'); // Thông báo lỗi
+        } finally {
+            fetchUsers(); // Cập nhật danh sách người dùng
+            setSelectedUser(prev => ({ ...prev, block: false })); // Cập nhật trạng thái bỏ chặn trong modal
+        }
+    }
+};
+
+
+
   const columns = [
     {
       title: 'STT',
@@ -181,7 +221,6 @@ const ReviewManager = () => {
     },
   ];
 
-  // Render giao diện chính
   if (loading) {
     return <LoadingCo />;
   }
@@ -192,7 +231,7 @@ const ReviewManager = () => {
         placeholder="Tìm kiếm sản phẩm..."
         prefix={<SearchOutlined />}
         style={{ marginBottom: 16, width: 300 }}
-        onChange={handleSearch} // Gọi hàm tìm kiếm khi thay đổi
+        onChange={handleSearch}
       />
 
       <div className="headerPage">
@@ -204,7 +243,7 @@ const ReviewManager = () => {
         className="table"
         dataSource={products.filter(product =>
           product.name.toLowerCase().includes(searchTerm.toLowerCase())
-        )} // Lọc sản phẩm theo từ khóa tìm kiếm
+        )}
         columns={columns}
         rowKey="_id"
         pagination={{
@@ -214,8 +253,6 @@ const ReviewManager = () => {
         }}
       />
 
-
-      {/* Modal hiển thị đánh giá */}
       <Modal
         title="Đánh giá sản phẩm"
         visible={isModalVisible}
@@ -230,7 +267,8 @@ const ReviewManager = () => {
                   <img
                     src={review.avatarUrl}
                     alt="Avatar người dùng"
-                    style={{ width: '30px', borderRadius: '50%', marginRight: '8px' }}
+                    style={{ width: '30px', borderRadius: '50%', marginRight: '8px', cursor: 'pointer' }}
+                    onClick={() => handleAvatarClick(users.find(user => user._id === review.user_id))}
                   />
                 )}
                 <div style={{ flex: 1 }}>
@@ -244,8 +282,6 @@ const ReviewManager = () => {
                       style={{ width: '100px', marginTop: '5px', borderRadius: '5px' }}
                     />
                   ))}
-
-                  {/* Hiển thị phản hồi dưới đánh giá */}
                   {review.responses.length > 0 && (
                     <div style={{ marginTop: '10px', paddingLeft: '20px', borderLeft: '2px solid #f0f0f0' }}>
                       <strong>Phản hồi:</strong>
@@ -273,14 +309,19 @@ const ReviewManager = () => {
                 >
                   Phản hồi
                 </Button>
+                <Button
+                  type="danger"
+                  onClick={() => openConfirmDeleteReviewModal(review._id)}
+                  style={{ marginTop: '10px', marginLeft: '8px' }}
+                >
+                  Xóa
+                </Button>
               </li>
             ))}
           </ul>
         ) : (
           <p>Không có đánh giá nào cho sản phẩm này.</p>
         )}
-
-        {/* Modal cho phản hồi */}
         <Modal
           title="Phản hồi cho đánh giá"
           visible={currentReviewId !== null}
@@ -303,7 +344,6 @@ const ReviewManager = () => {
         </Modal>
       </Modal>
 
-      {/* Modal cho sửa/xóa phản hồi */}
       <Modal
         title="Chọn hành động"
         visible={isResponseModalVisible}
@@ -329,7 +369,6 @@ const ReviewManager = () => {
         />
       </Modal>
 
-      {/* Modal xác nhận xóa */}
       <Modal
         title="Xác nhận xóa"
         visible={isConfirmDeleteVisible}
@@ -345,6 +384,54 @@ const ReviewManager = () => {
       >
         <p>Bạn có chắc chắn muốn xóa phản hồi này không?</p>
       </Modal>
+
+      <Modal
+        title="Xác nhận xóa đánh giá"
+        visible={isConfirmDeleteReviewVisible}
+        onCancel={() => setIsConfirmDeleteReviewVisible(false)}
+        footer={[
+          <Button key="cancel" onClick={() => setIsConfirmDeleteReviewVisible(false)}>
+            Hủy
+          </Button>,
+          <Button key="confirm" danger onClick={handleDeleteReview}>
+            Xóa
+          </Button>,
+        ]}
+      >
+        <p>Bạn có chắc chắn muốn xóa đánh giá này không?</p>
+      </Modal>
+
+      <Modal
+    title="Thông tin người dùng"
+    visible={isUserInfoVisible}
+    onCancel={() => setIsUserInfoVisible(false)}
+    footer={[
+        
+        <Button key="close" onClick={() => setIsUserInfoVisible(false)}>
+            Đóng
+        </Button>
+    ]}
+>
+    {selectedUser && (
+        <div><p><strong>ID:</strong> {selectedUser._id}</p>
+        <p><strong>Username</strong> {selectedUser.username}</p>
+            <p><strong>Tên:</strong> {selectedUser.full_name}</p>
+            <p><strong>Email:</strong> {selectedUser.email}</p>
+            <p><strong>Số điện thoại:</strong> {selectedUser.phone_number}</p>
+            {selectedUser.block && <p style={{ color: 'red' }}>Tài khoản đã bị chặn.</p>}
+            {!selectedUser.block ? (
+                <Button key="block" onClick={() => handleBlockUser(selectedUser._id)}>
+                    Chặn
+                </Button>
+            ) : null}
+            {selectedUser.block ? (
+                <Button key="unblock" onClick={() => handleUnblockUser(selectedUser._id)}>
+                    Bỏ chặn
+                </Button>
+            ) : null}
+        </div>
+    )}
+</Modal>
     </div>
   );
 };

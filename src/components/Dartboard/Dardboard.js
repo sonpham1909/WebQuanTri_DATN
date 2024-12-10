@@ -4,7 +4,8 @@ import { Chart, registerables } from 'chart.js';
 import { getTopSellingProducts } from '../../services/order_iteamServices';
 import { getAllProducts } from '../../services/ProductService';
 import { getAllOrder } from '../../services/OrderService';
-import { getAllUsers } from '../../services/UserService';
+import { getAllUsers,updateUser } from '../../services/UserService';
+import { message } from 'antd';
 import './index.css';
 
 Chart.register(...registerables);
@@ -33,16 +34,18 @@ export default function Dashboard() {
   const [totalOrdersThisYear, setTotalOrdersThisYear] = useState(0);
   const [customFetchedRevenue, setCustomFetchedRevenue] = useState(0);
   const [customTotalOrders, setCustomTotalOrders] = useState(0);
-  
+  const [showModal, setShowModal] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [action, setAction] = useState('');  
+  const [messageText, setMessageText] = useState('');  // Lưu thông báo
   const fetchTopSellingProducts = async () => {
     try {
-      const products = await getTopSellingProducts();
+      const products = await getTopSellingProducts(startDate, endDate); // Thêm tham số thời gian
       setTopSellingProducts(products);
     } catch (error) {
       console.error("Error fetching top selling products:", error);
     }
   };
-
   const fetchTotalRevenueForToday = async () => {
     const orders = await getAllOrder();
     const today = new Date();
@@ -236,13 +239,54 @@ export default function Dashboard() {
     const orders = await getAllOrder();
     fetchDailyRevenueForWeek(orders);
   };
+  const openModal = (userId, action) => {
+    setCurrentUserId(userId);  // Lưu ID người dùng đang thao tác
+    setAction(action);  // Lưu hành động chặn hay bỏ chặn
+    setMessageText(action === 'block' ? 'Chặn người dùng này?' : 'Bỏ chặn người dùng này?');  // Cập nhật thông báo
+    setShowModal(true);  // Mở modal
+  };
+
+  // Hàm đóng modal
+  const closeModal = () => {
+    setShowModal(false);  // Đóng modal
+  };
+
+  // Hàm chặn người dùng
+  const handleBlockUser = async () => {
+    if (currentUserId) {
+      try {
+        await updateUser(currentUserId, { block: true }); 
+        fetchAllUsers();  
+        message.success('Chặn người dùng thành công!');  
+        closeModal();  
+      } catch (error) {
+        console.error("Error blocking user:", error);
+        message.error('Có lỗi xảy ra khi chặn người dùng.'); 
+      }
+    }
+  };
+
+  // Hàm bỏ chặn người dùng
+  const handleUnblockUser = async () => {
+    if (currentUserId) {
+      try {
+        await updateUser(currentUserId, { block: false });  // Bỏ chặn người dùng
+        fetchAllUsers();  // Lấy lại danh sách người dùng
+        message.success('Bỏ chặn người dùng thành công!');  // Hiển thị thông báo thành công
+        closeModal();  // Đóng modal
+      } catch (error) {
+        console.error("Error unblocking user:", error);
+        message.error('Có lỗi xảy ra khi bỏ chặn người dùng.');  // Hiển thị thông báo lỗi
+      }
+    }
+  };
 
   useEffect(() => {
     fetchAllProducts();
     fetchAllUsers();
     fetchTotalRevenueAllTime();
-    fetchTotalDeliveredOrders(); // New line
-    fetchOrdersForStatistics(); // New line
+    fetchTotalDeliveredOrders(); 
+    fetchOrdersForStatistics(); 
 
     if (activeTab === "topProducts") {
       fetchTopSellingProducts();
@@ -257,7 +301,6 @@ export default function Dashboard() {
       fetchCancellationRateData();
     }
   }, [activeTab]);
-
   return (
     <div>
       <h1>Thống kê</h1>
@@ -271,25 +314,26 @@ export default function Dashboard() {
         {activeTab === "revenue" && (
           <div>
             <h2>Doanh thu</h2>
-            <div>
-              <label>
-                Ngày bắt đầu:
-                <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-              </label>
-              <label>
-                Ngày kết thúc:
-                <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-              </label>
-              <button onClick={fetchRevenueForCustomPeriod}>Lấy doanh thu</button>
-              <br />
-              <label>Doanh thu lấy được:</label>
-              <h3>{customFetchedRevenue.toLocaleString()} VND/{customTotalOrders} Đơn hàng</h3>
-            </div>
+            <div className="custom-revenue-box">
+  <label>
+    Ngày bắt đầu:
+    <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+  </label>
+  <label>
+    Ngày kết thúc:
+    <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+  </label>
+  <button onClick={fetchRevenueForCustomPeriod}>Thống Kê</button>
+  <br />
+  <label>Thống kê lấy được:</label>
+  <h3>{customFetchedRevenue.toLocaleString()} VND/{customTotalOrders} Đơn hàng</h3>
+</div>
+
             <h3>Tổng doanh thu: {totalRevenueAllTime > 0 ? totalRevenueAllTime.toLocaleString() : "Chưa có dữ liệu"} VND</h3>
             <h3>Tổng số đơn hàng đã giao thành công: {totalDeliveredOrders}</h3>
-            <h3>Tổng số đơn hàng hôm nay: {totalOrdersToday}</h3> {/* New line */}
-            <h3>Tổng số đơn hàng trong tháng: {totalOrdersThisMonth}</h3> {/* New line */}
-            <h3>Tổng số đơn hàng trong năm: {totalOrdersThisYear}</h3> {/* New line */}
+            <h3>Tổng số đơn hàng hôm nay: {totalOrdersToday}</h3> 
+            <h3>Tổng số đơn hàng trong tháng: {totalOrdersThisMonth}</h3> 
+            <h3>Tổng số đơn hàng trong năm: {totalOrdersThisYear}</h3> 
             <br />
             <h3>DOANH THU NGÀY HÔM NAY</h3>
             <Bar
@@ -358,81 +402,123 @@ export default function Dashboard() {
           </div>
         )}
 
-        {activeTab === "topProducts" && (
-          <div>
-            <h2>Sản phẩm bán chạy nhất</h2>
-            <ul className="top-products-list">
-              {topSellingProducts.map((product, index) => {
-                const productName = allProducts[product._id];
-                return (
-                  <li key={product._id}>
-                    {index === 0 && (
-                      <img
-                        src="https://img.icons8.com/color/480/trophy.png"
-                        alt="Cúp vàng"
-                        className={`trophy-icon trophy-gold`}
-                      />
-                    )}
-                    {index === 1 && (
-                      <img
-                        src="https://img.pikbest.com/png-images/20240606/silver-trophy-cup_10600171.png!w700wp"
-                        alt="Cúp bạc"
-                        className={`trophy-icon trophy-silver`}
-                      />
-                    )}
-                    {index === 2 && (
-                      <img
-                        src="https://img.lovepik.com/free-png/20220120/lovepik-silver-trophy-png-image_401543541_wh860.png"
-                        alt="Cúp đồng"
-                        className={`trophy-icon trophy-bronze`}
-                      />
-                    )}
-                    <span style={{ marginRight: '5px' }}>{index > 2 ? index + 1 : ''}.</span>
-                    {productName || "Sản phẩm không xác định"} -
-                    Tổng số lượng bán: {product.totalQuantity || 0} -
-                    Tổng doanh thu: {product.totalAmount ? product.totalAmount.toLocaleString() : '0'} VND
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        )}
-
-        {activeTab === "cancellationRate" && (
-          <div style={{ width: '600px', margin: '0 auto' }}>
-            <h2>Tỉ lệ hủy nhận hàng</h2>
-            <Pie
-              data={{
+{activeTab === "topProducts" && (
+  <div>
+    <h2>Sản phẩm bán chạy nhất</h2>
+    <label>
+      Ngày bắt đầu:
+      <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+    </label>
+    <label>
+      Ngày kết thúc:
+      <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+    </label>
+    <button
+      onClick={() => {
+        // Kiểm tra tính hợp lệ của ngày
+        if (new Date(endDate) < new Date(startDate)) {
+       
+          return;
+        }
+        fetchTopSellingProducts(startDate, endDate); // Gọi hàm với tham số ngày
+      }}
+    >
+      Lọc Sản Phẩm
+    </button>
+    <ul className="top-products-list">
+      {topSellingProducts.length > 0 ? (
+        topSellingProducts
+          .sort((a, b) => b.totalQuantity - a.totalQuantity) // Sắp xếp theo số lượng bán
+          .map((product, index) => {
+            const productName = allProducts[product._id];
+            return (
+              <li key={product._id}>
+                {index === 0 && <img src="http://res.cloudinary.com/dxq83pae3/image/upload/v1733564713/hqgojffkwhelmhnpdab5.png" alt="Cúp vàng" className="trophy-icon trophy-gold" />}
+                {index === 1 && <img src="https://img.pikbest.com/png-images/20240606/silver-trophy-cup_10600171.png!w700wp" alt="Cúp bạc" className="trophy-icon trophy-silver" />}
+                {index === 2 && <img src="https://img.lovepik.com/free-png/20220120/lovepik-silver-trophy-png-image_401543541_wh860.png" alt="Cúp đồng" className="trophy-icon trophy-bronze" />}
+                <span style={{ marginRight: '5px' }}>{index > 2 ? index + 1 : ''}.</span>
+                {productName || "Sản phẩm không xác định"} -
+                Tổng số lượng bán: {product.totalQuantity || 0} - Tổng doanh thu: {product.totalAmount ? product.totalAmount.toLocaleString() : '0'} VND
+              </li>
+            );
+          })
+      ) : (
+        <li>Không có sản phẩm nào trong khoảng thời gian này.</li>
+      )}
+    </ul>
+  </div>
+)}
+{activeTab === "cancellationRate" && (
+    <div style={{ width: '500px', margin: '0 auto' }}>
+        <h2>Tỉ lệ hủy nhận hàng</h2>
+        <Pie
+            data={{
                 labels: ['Đơn hàng giao thành công', 'Đơn hàng bị hủy'],
                 datasets: [{
-                  data: cancellationRateData,
-                  backgroundColor: ['rgba(75, 192, 192, 0.6)', 'rgba(255, 99, 132, 0.6)'],
+                    data: cancellationRateData,
+                    backgroundColor: ['rgba(75, 192, 192, 0.6)', 'rgba(255, 99, 132, 0.6)'],
                 }],
-              }}
-              options={{
+            }}
+            options={{
                 responsive: true,
                 plugins: {
-                  legend: {
-                    position: 'top',
-                  },
+                    legend: {
+                        position: 'top',
+                    },
                 },
-              }}
-            />
+            }}
+        />
 
-            <h3>Người dùng có tỷ lệ hủy hàng nhiều nhất</h3>
-            <ul>
-              {topCancelUsers.length === 0 ? (
+        <h3>Người dùng có tỷ lệ hủy hàng nhiều nhất</h3>
+        <ul style={{ width: '1000px', margin: '0 auto' }}>
+            {topCancelUsers.length === 0 ? (
                 <li>Không có người dùng nào hủy đơn hàng.</li>
-              ) : (
+            ) : (
                 topCancelUsers.map(({ userId, userName, canceledCount }) => (
-                  <li key={userId}>
-                    Người dùng ID: {userId} - Tên: {userName} - Số lượng đơn hàng bị hủy: {canceledCount}
-                  </li>
+                    <li key={userId}>
+                        Tên: {userName} - Số lượng đơn hàng bị hủy: {canceledCount}
+                        {(() => {
+                            if (canceledCount > 0) {
+                                return (
+                                    <>
+                                        <button
+                                            onClick={() => openModal(userId, 'block')}
+                                            style={{ marginLeft: '20px', backgroundColor: 'red', color: 'white', border: 'none', padding: '5px 10px', cursor: 'pointer' }}
+                                        >
+                                            Chặn
+                                        </button>
+                                        <button
+                                            onClick={() => openModal(userId, 'unblock')}
+                                            style={{ marginLeft: '10px', backgroundColor: 'blue', color: 'white', border: 'none', padding: '5px 10px', cursor: 'pointer' }}
+                                        >
+                                            Bỏ chặn
+                                        </button>
+                                    </>
+                                );
+                            }
+                            return null; // Không hiển thị nút nếu không có đơn hàng hủy
+                        })()}
+                    </li>
                 ))
-              )}
-            </ul>
-          </div>
-        )}
+            )}
+        </ul>
+    </div>
+)}
+
+{showModal && (
+    <div className="modal">
+        <div className="modal-content">
+            <p>{messageText}</p>
+            <button
+                onClick={action === 'block' ? handleBlockUser : handleUnblockUser}
+                style={{ marginRight: '10px' }}
+            >
+                Xác nhận
+            </button>
+            <button onClick={closeModal}>Hủy</button>
+        </div>
+    </div>
+)}
       </div>
     </div>
   );

@@ -46,9 +46,14 @@ export const getOrderItemsByOrderId = async (orderId) => {
 };
 
 // Hàm lấy sản phẩm bán chạy nhất
-export const getTopSellingProducts = async () => {
+export const getTopSellingProducts = async (startDate, endDate) => {
     try {
-        const response = await axiosInstance.get('/top_selling');
+        const response = await axiosInstance.get('/top_selling', {
+            params: {
+                startDate: startDate,
+                endDate: endDate,
+            }
+        });
         return response.data;
     } catch (error) {
         console.error("Error fetching top selling products:", error.response ? error.response.data : error.message);

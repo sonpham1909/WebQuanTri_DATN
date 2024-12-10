@@ -1,4 +1,4 @@
-/* index.css */
+
 .top-products-list {
   list-style: none;
   padding: 0;
@@ -14,10 +14,10 @@
   width: 30px;
   height: 30px;
   margin-right: 10px;
-  animation: burn 1.5s infinite alternate; /* Hiệu ứng cháy */
+  animation: burn 1.5s infinite alternate; 
 }
 
-/* Hiệu ứng cháy */
+
 @keyframes burn {
   0% {
     transform: scale(1);
@@ -28,21 +28,17 @@
     box-shadow: 0 0 20px rgba(255, 165, 0, 1), 0 0 30px rgba(255, 69, 0, 1);
   }
 }
-
-/* Màu sắc cho từng cúp */
 .trophy-gold {
-  filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.7)); /* Màu vàng */
+  filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.7));
 }
 
 .trophy-silver {
-  filter: drop-shadow(0 0 5px rgba(192, 192, 192, 0.7)); /* Màu bạc */
+  filter: drop-shadow(0 0 5px rgba(192, 192, 192, 0.7)); 
 }
 
 .trophy-bronze {
-  filter: drop-shadow(0 0 5px rgba(205, 127, 50, 0.7)); /* Màu đồng */
+  filter: drop-shadow(0 0 5px rgba(205, 127, 50, 0.7)); 
 }
-/* index.css */
-
 body {
   font-family: Arial, sans-serif;
   background-color: #f4f4f4;
@@ -137,4 +133,135 @@ button:hover {
 
 .trophy-bronze {
   filter: drop-shadow(0 0 5px rgba(205, 127, 50, 0.5));
+}
+.custom-revenue-box {
+  border: 2px solid #007bff; 
+  border-radius: 8px;       
+  padding: 16px;          
+  margin: 16px 0;           
+  background-color: #f9f9f9; 
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  width: 500px;
+}
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+h1 {
+  text-align: center;
+  margin: 20px 0;
+}
+
+.tabs {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.tabs button {
+  padding: 10px 20px;
+  border: 1px solid #007bff;
+  background-color: #007bff;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+.tabs button:hover, .tabs button:focus {
+  background-color: #f5b402;
+  color: white;
+}
+
+.tab-content {
+  margin: 0 auto;
+  max-width: 1700px;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  background-color: #fff;
+}
+.custom-revenue-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.custom-revenue-box label {
+  display: flex;
+  flex-direction: column;
+  font-weight: bold;
+}
+
+.custom-revenue-box input[type="date"] {
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.custom-revenue-box button {
+  align-self: flex-start;
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.custom-revenue-box button:hover {
+  background-color: #0056b3;
+}
+
+
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: space-around;
+  margin-bottom: 20px;
+}
+
+.summary-item {
+  background: #f8f9fa;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 15px 20px;
+  text-align: center;
+  flex: 1;
+  min-width: 200px;
+}
+
+.summary-item h3 {
+  margin: 10px 0;
+  color: #343a40;
+}
+
+.summary-item span {
+  font-size: 1.2em;
+  color: #28a745;
+}
+
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  text-align: center;
 }

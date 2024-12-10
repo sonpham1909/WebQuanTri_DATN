@@ -5,10 +5,9 @@ import {
     addSubcategory,
     deleteSubcategory,
     getAllSubcategories,
-    searchSubcategories,
     updateSubcategory,
 } from '../../services/SubcategoryServices';
-import { getAllProducts } from '../../services/ProductService';
+import { getAllProducts,searchProducts } from '../../services/ProductService';
 import { addProductSubCategory, getAllProductSubCategories, deleteProductSubCategory } from '../../services/Product_sub_categoriesServices';
 import { getAllCategories } from '../../services/Categoryservices';
 import { Button, Table, Modal, message, Form, Input, Upload, Select } from 'antd';
@@ -42,7 +41,7 @@ const SubcategoryManager = () => {
     const [searchText, setSearchText] = useState('');
     const [imgFile, setImgFile] = useState(null);
     const [categories, setCategories] = useState([]);
-
+    const [allSubcategories, setAllSubcategories] = useState([]);
     const [products, setProducts] = useState([]);
     const [productSubCategories, setProductSubCategories] = useState([]);
     const [productNames, setProductNames] = useState({});
@@ -55,7 +54,15 @@ const SubcategoryManager = () => {
     const handleBackToHome = () => {
       navigate('/home', { state: { selectedItem: 'item2' } });
     };
-
+    const handleSearchProducts = async (searchTerm) => {
+        try {
+            const result = await searchProducts(searchTerm);  // Gọi hàm tìm kiếm sản phẩm
+            setProducts(result);  // Lưu kết quả vào state 'products'
+        } catch (error) {
+            console.error("Lỗi khi tìm kiếm sản phẩm:", error);
+        }
+    };
+    
     const fetchSubcategories = async () => {
         setLoading(true);
         try {
@@ -110,23 +117,43 @@ const SubcategoryManager = () => {
     };
 
 
+    const fetchAllSubcategories = async () => {
+        try {
+            const result = await getAllSubcategories(); // Gọi hàm bất đồng bộ
+            setAllSubcategories(result); // Lưu kết quả vào state
+            setSubcategories(result); // Cập nhật subcategories ban đầu
+        } catch (error) {
+            console.error('Error fetching subcategories:', error);
+        }
+    };
+
+    // Gọi hàm fetchAllSubcategories khi component được tải
+    useEffect(() => {
+        fetchAllSubcategories();
+    }, []);
+
     const handleSearch = useCallback(
-        debounce(async (searchTerm) => {
+        debounce((searchTerm) => {
             if (searchTerm) {
-                const result = await searchSubcategories(searchTerm);
-                const filteredSubcategories = result.filter(sub => sub.id_category === categoryId);
-                setSubcategories(filteredSubcategories);
+                if (Array.isArray(allSubcategories)) {
+                    const filteredSubcategories = allSubcategories.filter(sub =>
+                        sub.name.toLowerCase().includes(searchTerm.toLowerCase()) // So sánh trường name
+                    );
+                    setSubcategories(filteredSubcategories);
+                } else {
+                    console.error('allSubcategories is not an array:', allSubcategories);
+                }
             } else {
-                fetchSubcategories();
+                setSubcategories(allSubcategories); // Hiển thị lại tất cả khi không có từ khóa tìm kiếm
             }
         }, 300),
-        [categoryId]
+        [allSubcategories] // Chỉ theo dõi allSubcategories
     );
 
     const onSearchChange = (e) => {
         const value = e.target.value;
-        setSearchText(value);
-        handleSearch(value);
+        setSearchText(value); // Cập nhật trạng thái tìm kiếm
+        handleSearch(value);   // Gọi hàm tìm kiếm đã được debounce
     };
 
     const showModalAdd = () => {
@@ -452,30 +479,34 @@ const SubcategoryManager = () => {
 
             {/* Modal Thêm Sản Phẩm Vào Danh Mục Con */}
             <Modal
-                title="Thêm Sản Phẩm Vào Danh Mục Con"
-                visible={isModalVisibleAddProduct}
-                onCancel={() => setIsModalVisibleAddProduct(false)}
-                footer={null}
+    title="Thêm Sản Phẩm Vào Danh Mục Con"
+    visible={isModalVisibleAddProduct}
+    onCancel={() => setIsModalVisibleAddProduct(false)}
+    footer={null}
+>
+    <Form form={productForm} onFinish={handleAddProductToSubcategory}>
+        <Form.Item name="product_id" label="Chọn Sản Phẩm" rules={[{ required: true, message: 'Vui lòng chọn sản phẩm!' }]}>
+            <Select
+                placeholder="Chọn Sản Phẩm"
+                onChange={(value) => setSelectedProductId(value)}
+                value={selectedProductId || undefined}
+                showSearch // Kích hoạt chức năng tìm kiếm
+                filterOption={(input, option) => 
+                    option.children.toLowerCase().includes(input.toLowerCase()) // Lọc các lựa chọn dựa trên đầu vào
+                }
             >
-                <Form form={productForm} onFinish={handleAddProductToSubcategory}>
-                    <Form.Item name="product_id" label="Chọn Sản Phẩm" rules={[{ required: true, message: 'Vui lòng chọn sản phẩm!' }]}>
-                        <Select
-                            placeholder="Chọn Sản Phẩm"
-                            onChange={(value) => setSelectedProductId(value)}
-                            value={selectedProductId || undefined}
-                        >
-                            {products.map(product => (
-                                <Option key={product._id} value={product._id}>
-                                    {product.name}
-                                </Option>
-                            ))}
-                        </Select>
-                    </Form.Item>
-                    <Form.Item>
-                        <Button type="primary" htmlType="submit">Thêm Sản Phẩm</Button>
-                    </Form.Item>
-                </Form>
-            </Modal>
+                {products.map(product => (
+                    <Select.Option key={product._id} value={product._id}>
+                        {product.name}
+                    </Select.Option>
+                ))}
+            </Select>
+        </Form.Item>
+        <Form.Item>
+            <Button type="primary" htmlType="submit">Thêm Sản Phẩm</Button>
+        </Form.Item>
+    </Form>
+</Modal>
         </div>
     );
 };

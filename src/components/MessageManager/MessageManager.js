@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Input, Button, List, Avatar, message, Row, Col, Upload } from 'antd';
+import { Input, Button, List, Avatar, message, Row, Col, Upload, Alert } from 'antd';
 import { SearchOutlined, UploadOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { getAllUsers } from '../../services/UserService';
 import { getAllMessages, updateMessage } from '../../services/MessageServices';
 import { getRepliesByMessageId, createReply } from '../../services/ReplyServices';
 import moment from 'moment';
 import './index.css';
-import { socket } from '../../services/socketio';
+
+import { io } from 'socket.io-client';
 
 const MessageManager = () => {
     const [users, setUsers] = useState([]);
@@ -19,11 +20,34 @@ const MessageManager = () => {
     const [newReplyImage, setNewReplyImage] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [repliedUsers, setRepliedUsers] = useState(new Set());
+    const [messagesReceived, setMessagesReceived] = useState([]);
 
    
     useEffect(() => {
         fetchUsersAndMessages();
     }, []);
+    const socket = io('http://localhost:3000'); // Địa chỉ server của bạn
+
+    useEffect(() => {
+        // Đăng ký admin
+        socket.emit('registerAdmin');
+
+        // Lắng nghe tin nhắn từ người dùng
+        socket.on('sendMessageToAdmins', (data) => {
+            setMessages(oldMessages => [...oldMessages, data]);
+            console.log('Tin nhắn mới: ', data);
+            alert('Tin nhắn mới: ' + data.content);
+        });
+
+        // Ngắt lắng nghe sự kiện khi component unmount
+        return () => {
+            socket.off('sendMessageToAdmins');
+            
+        };
+    }, [socket]); // Thêm socket vào dependency array
+
+    //Nhận message
+    
 
     const fetchUsersAndMessages = async () => {
         setLoadingUsers(true);

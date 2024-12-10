@@ -48,14 +48,14 @@ const Login = () => {
       const userId = response.data._id;
       await localStorage.setItem('userId', userId);
       
-      socket.emit('registerUser',userId
-
-      )
+      
 
       setState((prevState) => ({
         ...prevState,
         user: { _id: userId, username: response.data.username, avatar: response.data.avatar },
       }));
+
+     
 
       setError(null);
       navigate('/Home');

@@ -457,7 +457,7 @@ const ProductManager = () => {
         footer={null}
       >
         {loadingAc && <Spin />}
-        <Form form={form} layout="vertical" onFinish={handleSubmit}>
+        <Form form={form} layout="vertical">
           <Form.Item label="Tên sản phẩm" name="name" rules={[{ required: true, message: 'Vui lòng nhập tên sản phẩm!' }]}>
             <Input required />
           </Form.Item>
@@ -479,7 +479,9 @@ const ProductManager = () => {
           </Form.Item>
 
           <Form.Item>
-            <Button type="primary" htmlType="submit">Thêm sản phẩm</Button>
+            <Button type="primary" htmlType="submit" 
+            onClick={() => handleSubmit(form.getFieldsValue())}
+            >Thêm sản phẩm</Button>
           </Form.Item>
         </Form>
       </Modal>
@@ -525,7 +527,7 @@ const ProductManager = () => {
             </div>
           ))}
         </div>
-        <Form form={form} layout="vertical" onFinish={handleUpdateImages}
+        <Form form={form} layout="vertical" 
 
         >
           <Form.Item label="Hình ảnh mới" name="imageUrls">
@@ -548,7 +550,9 @@ const ProductManager = () => {
             <Input type='number' required />
           </Form.Item>
           <Form.Item>
-            <Button type="primary" htmlType="submit">Cập nhật sản phẩm</Button>
+            <Button type="primary" htmlType="submit"
+            onClick={() => handleUpdateImages(form.getFieldsValue())}
+            >Cập nhật sản phẩm</Button>
           </Form.Item>
         </Form>
       </Modal>
@@ -603,7 +607,7 @@ const ProductManager = () => {
         </div>
 
 
-        <Form form={form} onFinish={onFinish} layout="vertical">
+        <Form form={form} layout="vertical">
 
 
           <Form.Item
@@ -677,7 +681,9 @@ const ProductManager = () => {
             </Upload>
           </Form.Item>
 
-          <Button type="primary" htmlType="submit">
+          <Button type="primary" htmlType="submit"
+          onClick={() => onFinish(form.getFieldsValue())}
+          >
             Tạo Biến Thể
           </Button>
         </Form>

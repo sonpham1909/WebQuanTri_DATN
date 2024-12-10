@@ -67,18 +67,19 @@ export const deleteSubcategory = async (subcategoryId) => { // Đổi tên hàm
     }
 };
 
-// Tìm kiếm danh mục con
-export const searchSubcategories = async (searchTerm) => { // Đổi tên hàm
+
+export const searchSubcategories = async (searchTerm) => {
     try {
         const response = await axiosInstance.get('/search', {
             params: { keyword: searchTerm },
         });
         return response.data;
     } catch (error) {
-        console.error("Error searching subcategories:", error.response.data);
+        console.error("Error searching subcategories:", error.response?.data || error.message);
         throw error;
     }
 };
+
 export const getProductsBySubcategory = async (subcategoryId) => {
     const response = await axios.get(`${API_URL}/products?subcategoryId=${subcategoryId}`);
     return response.data; // Hoặc xử lý dữ liệu theo yêu cầu của bạn

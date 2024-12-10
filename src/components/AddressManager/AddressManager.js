@@ -144,84 +144,7 @@ const fetchUsers = async () => {
             notification.error({ message: editAddressIndex !== null ? 'Cập nhật địa chỉ không thành công' : 'Thêm địa chỉ không thành công' });
         }
     };
-    
-
-    const handleDeleteAddress = async (index) => {
-        const addressToDelete = addresses[index];
-
-        Modal.confirm({
-            title: 'Bạn có chắc chắn muốn xóa địa chỉ này?',
-            content: 'Địa chỉ sẽ bị xóa vĩnh viễn và không thể khôi phục.',
-            okText: 'Xóa',
-            cancelText: 'Hủy',
-            onOk: async () => {
-                try {
-                    await deleteAddress(addressToDelete._id);
-                    const updatedAddresses = addresses.filter((_, i) => i !== index);
-                    setAddresses(updatedAddresses);
-                    setAllAddresses(allAddresses.filter(addr => addr._id !== addressToDelete._id));
-                    notification.success({ message: 'Địa chỉ đã được xóa' });
-                } catch (error) {
-                    console.error("Failed to delete address", error);
-                    notification.error({ message: 'Xóa địa chỉ không thành công' });
-                }
-            }
-        });
-    };
-
-    const handleEditAddress = (index) => {
-        const addressToEdit = addresses[index];
-        setNewAddress({
-            city: addressToEdit.addressDetail.city,
-            district: addressToEdit.addressDetail.district,
-            ward: addressToEdit.addressDetail.ward,
-            street: addressToEdit.addressDetail.street,
-            notes: addressToEdit.notes,
-            full_name: addressToEdit.recipientName,  // Tên người nhận
-            phone: addressToEdit.recipientPhone,  // Số điện thoại
-        });
-        setEditAddressIndex(index);
-        setIsAddAddressModalVisible(true);
-    };
-
-
-    const handleSetDefaultAddress = async (index) => {
-        const addressToSetDefault = addresses[index];
-
-        if (addressToSetDefault.isDefault) {
-            notification.warning({ message: 'Địa chỉ này đã là mặc định!' });
-            return;
-        }
-
-        const updatedAddresses = addresses.map((address, i) => {
-            return {
-                ...address,
-                isDefault: i === index,
-            };
-        });
-
-        try {
-            await Promise.all(updatedAddresses.map(address => updateAddress(address._id, address)));
-
-            setAddresses(updatedAddresses);
-            setAllAddresses(allAddresses.map(addr =>
-                addr.id_user === selectedUser._id ? updatedAddresses.find(a => a._id === addr._id) || addr : addr
-            ));
-
-            // Hiển thị số điện thoại của địa chỉ mặc định mới
-
-            notification.success({ message: 'Cập nhật địa chỉ mặc định thành công!' });
-        } catch (error) {
-            console.error("Failed to set default address", error);
-            notification.error({ message: 'Cập nhật địa chỉ mặc định không thành công' });
-        }
-    };
-
-
-    const handleDoubleClickAddress = (index) => {
-        handleSetDefaultAddress(index);
-    };
-
+   
     const columns = [
         {
             title: 'STT',
@@ -300,10 +223,6 @@ const fetchUsers = async () => {
                             dataSource={addresses}
                             renderItem={(item, index) => (
                                 <List.Item
-                                    actions={[
-                                  
-                                    ]}
-                                    onDoubleClick={() => handleDoubleClickAddress(index)}
                                 >
                                     <div>
                                         <p><strong>Họ và Tên: </strong> {item.recipientName}</p>
@@ -321,44 +240,7 @@ const fetchUsers = async () => {
                 )}
             </Modal>
 
-            <Modal
-                visible={isAddAddressModalVisible}
-                title={editAddressIndex !== null ? 'Cập nhật địa chỉ' : 'Thêm địa chỉ mới'}
-                onCancel={handleAddAddressModalClose}
-                footer={[
-                    <Button key="cancel" onClick={handleAddAddressModalClose}>
-                        Hủy bỏ
-                    </Button>,
-                    <Button key="submit" type="primary" onClick={handleAddAddress}>
-                        {editAddressIndex !== null ? 'Cập nhật' : 'Thêm địa chỉ'}
-                    </Button>,
-                ]}
-            >
-                <Form form={form} layout="vertical">
-                    <Form.Item label="Họ và Tên">
-                        <Input value={newAddress.full_name} onChange={(e) => setNewAddress({ ...newAddress, full_name: e.target.value })} />
-                    </Form.Item>
-                    <Form.Item label="Số điện thoại">
-                        <Input value={newAddress.phone} onChange={(e) => setNewAddress({ ...newAddress, phone: e.target.value })} />
-                    </Form.Item>
-
-                    <Form.Item label="Tỉnh/Thành phố">
-                        <Input value={newAddress.city} onChange={(e) => setNewAddress({ ...newAddress, city: e.target.value })} />
-                    </Form.Item>
-                    <Form.Item label="Quận/Huyện">
-                        <Input value={newAddress.district} onChange={(e) => setNewAddress({ ...newAddress, district: e.target.value })} />
-                    </Form.Item>
-                    <Form.Item label="Xã/Phường">
-                        <Input value={newAddress.ward} onChange={(e) => setNewAddress({ ...newAddress, ward: e.target.value })} />
-                    </Form.Item>
-                    <Form.Item label="Đường">
-                        <Input value={newAddress.street} onChange={(e) => setNewAddress({ ...newAddress, street: e.target.value })} />
-                    </Form.Item>
-                    <Form.Item label="Ghi chú">
-                        <Input value={newAddress.notes} onChange={(e) => setNewAddress({ ...newAddress, notes: e.target.value })} />
-                    </Form.Item>
-                </Form>
-            </Modal>
+          
         </div>
     );
 };

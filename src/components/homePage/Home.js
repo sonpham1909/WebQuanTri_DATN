@@ -13,6 +13,7 @@ import PaymentMethodManager from '../PaymentMethodManager/PaymentMethodManager';
 import MessageManager from '../MessageManager/MessageManager';
 import axios from 'axios';
 import { AppContext } from '../../services/AppContext';
+import NotifiManager from '../NotifiManager/NotifiManager';
 
 
 
@@ -35,29 +36,29 @@ function Home() {
 
   const handleLogout = async () => {
     try {
-        const response = await fetch('http://localhost:3000/v1/auth/logout', {
-            method: 'POST',
-            credentials: 'include', // Để gửi cookie
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        });
+      const response = await fetch('http://localhost:3000/v1/auth/logout', {
+        method: 'POST',
+        credentials: 'include', // Để gửi cookie
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(`Đăng xuất thất bại: ${errorData.message || 'Lỗi không xác định'}`);
-        }
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Đăng xuất thất bại: ${errorData.message || 'Lỗi không xác định'}`);
+      }
 
-        const data = await response.json();
-        console.log(data.message);
-        
-        // Xoá token và điều hướng
-        localStorage.removeItem('token');
-        navigate('/login');
+      const data = await response.json();
+      console.log(data.message);
+
+      // Xoá token và điều hướng
+      localStorage.removeItem('token');
+      navigate('/login');
     } catch (error) {
-        console.error('Đăng xuất thất bại:', error);
+      console.error('Đăng xuất thất bại:', error);
     }
-};
+  };
 
 
 
@@ -76,12 +77,14 @@ function Home() {
         return <BillManager />;
       case 'item5':
         return <AddressManager />;
-        case 'item6':
-          return <ReviewManager />;
-          case 'item7':
-            return <PaymentMethodManager />;
-            case 'item8':
-              return <MessageManager />;
+      case 'item6':
+        return <ReviewManager />;
+      case 'item7':
+        return <PaymentMethodManager />;
+      case 'item8':
+        return <MessageManager />;
+      case 'item9':
+        return <NotifiManager />;
 
       default:
         return 'Không tìm thấy nội dung';
@@ -90,16 +93,16 @@ function Home() {
 
   return (
     <div>
-      <Header handleLogout={handleLogout}/>
+      <Header handleLogout={handleLogout} />
       <div style={{ display: 'flex' }}>
         <div className="sidebar">
           <ul>
-          <h4 className='titleul'>| Trang chủ</h4>
+            <h4 className='titleul'>| Trang chủ</h4>
             <li
               className={selectedSidebarItem === 'item0' ? 'active' : ''}
               onClick={() => handleSidebarItemClick('item0')}
             >
-               Thống kê
+              Thống kê
             </li>
 
             <h4 className='titleul'>| Quản lý</h4>
@@ -146,10 +149,16 @@ function Home() {
               Quản lý thanh toán
             </li>
             <li
+              className={selectedSidebarItem === 'item9' ? 'active' : ''}
+              onClick={() => handleSidebarItemClick('item9')}
+            >
+              Quản lý thông báo
+            </li>
+            <li
               className={selectedSidebarItem === 'item8' ? 'active' : ''}
               onClick={() => handleSidebarItemClick('item8')}
             >
-         Tin nhắn
+              Tin nhắn
             </li>
           </ul>
 

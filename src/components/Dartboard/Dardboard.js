@@ -7,6 +7,14 @@ import { getAllOrder } from '../../services/OrderService';
 import { getAllUsers } from '../../services/UserService';
 import './index.css';
 
+import io from 'socket.io-client';
+
+// Thay đổi URL này để phù hợp với server của bạn
+const socket = io('http://localhost:3000', {
+  transports: ['websocket'], // Sử dụng websocket để giảm độ trễ
+  jsonp: false,
+});
+
 Chart.register(...registerables);
 
 export default function Dashboard() {

@@ -265,3 +265,12 @@ h1 {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
   text-align: center;
 }
+/* Ẩn thanh cuộn nhưng vẫn giữ khả năng cuộn */
+.hide-scrollbar {
+  scrollbar-width: none; /* Ẩn scrollbar trên Firefox */
+  -ms-overflow-style: none; /* Ẩn scrollbar trên Internet Explorer */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* Ẩn scrollbar trên Chrome, Edge và Safari */
+}

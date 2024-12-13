@@ -37,8 +37,8 @@
 
 .content {
     margin-left: 220px; /* Để tránh bị che bởi sidebar, cần thêm một chút khoảng cách */
-    padding: 20px; /* Khoảng cách bên trong cho nội dung */
-    width: calc(100% - 220px); /* Đảm bảo chiều rộng nội dung không bị che */
+    padding-left: 40px; /* Khoảng cách bên trong cho nội dung */
+    width: 1560px; /* Đảm bảo chiều rộng nội dung không bị che */
 }
 
 .container {

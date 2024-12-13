@@ -1,12 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { Input, Button, List, Avatar, message, Row, Col, Upload, Alert } from 'antd';
+import React, { useEffect, useState, useRef } from 'react';
+import { Input, Button, List, Avatar, message, Row, Col, Upload } from 'antd';
 import { SearchOutlined, UploadOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { getAllUsers } from '../../services/UserService';
 import { getAllMessages, updateMessage } from '../../services/MessageServices';
 import { getRepliesByMessageId, createReply } from '../../services/ReplyServices';
 import moment from 'moment';
 import './index.css';
-
 import { io } from 'socket.io-client';
 
 const MessageManager = () => {
@@ -15,39 +14,47 @@ const MessageManager = () => {
     const [replies, setReplies] = useState({});
     const [loadingUsers, setLoadingUsers] = useState(true);
     const [loadingMessages, setLoadingMessages] = useState(false);
+    const [newMessagesLoading, setNewMessagesLoading] = useState(false);
     const [selectedUserId, setSelectedUserId] = useState(null);
     const [newReply, setNewReply] = useState('');
     const [newReplyImage, setNewReplyImage] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [repliedUsers, setRepliedUsers] = useState(new Set());
-    const [messagesReceived, setMessagesReceived] = useState([]);
+    const [currentViewingUserId, setCurrentViewingUserId] = useState(null);
+    const [isFirstLoad, setIsFirstLoad] = useState(true);
+    const messagesEndRef = useRef(null);
+    const messageContainerRef = useRef(null); // Ref cho container tin nhắn
 
-    // Fetch users and messages on component mount
     useEffect(() => {
         fetchUsersAndMessages();
     }, []);
-    const socket = io('http://localhost:3000'); // Địa chỉ server của bạn
+
+    const socket = io('http://localhost:3000');
 
     useEffect(() => {
-        // Đăng ký admin
         socket.emit('registerAdmin');
 
-        // Lắng nghe tin nhắn từ người dùng
-        socket.on('sendMessageToAdmins', (data) => {
-            setMessages(oldMessages => [...oldMessages, data]);
-            console.log('Tin nhắn mới: ', data);
-            alert('Tin nhắn mới: ' + data.content);
+        socket.on('sendMessageToAdmins', async (data) => {
+            setNewMessagesLoading(true);
+            setMessages(oldMessages => {
+                const updatedMessages = [...oldMessages, data];
+                return filterDuplicateMessages(updatedMessages);
+            });
+
+            if (currentViewingUserId === data.user_id) {
+                await updateMessage(data._id, { status: true });
+                await fetchRepliesForMessages([data]);
+            } else {
+                await fetchUsersAndMessages();
+            }
+
+            setNewMessagesLoading(false);
         });
 
-        // Ngắt lắng nghe sự kiện khi component unmount
         return () => {
             socket.off('sendMessageToAdmins');
-            
         };
-    }, [socket]); // Thêm socket vào dependency array
-
-    //Nhận message
-    
+    }, [socket, currentViewingUserId]);
 
     const fetchUsersAndMessages = async () => {
         setLoadingUsers(true);
@@ -65,6 +72,9 @@ const MessageManager = () => {
         } finally {
             setLoadingUsers(false);
             setLoadingMessages(false);
+            if (isFirstLoad) {
+                setIsFirstLoad(false);
+            }
         }
     };
 
@@ -73,10 +83,10 @@ const MessageManager = () => {
         return messages.filter(message => {
             const key = `${message.user_id}-${message.content}-${message.createdAt}`;
             if (seen.has(key)) {
-                return false; // Duplicate found
+                return false;
             }
             seen.add(key);
-            return true; // Unique message
+            return true;
         });
     };
 
@@ -96,12 +106,12 @@ const MessageManager = () => {
             const hasUnreadMessages = latestMessage && !latestMessage.status;
             return { ...user, hasUnreadMessages, latestMessageDate: latestMessage ? new Date(latestMessage.createdAt) : null };
         }).filter(user => user.latestMessageDate !== null)
-          .sort((a, b) => b.latestMessageDate - a.latestMessageDate);
+            .sort((a, b) => b.latestMessageDate - a.latestMessageDate);
     };
 
     const fetchRepliesForMessages = async (messages) => {
         try {
-            const repliesMap = {};
+            const repliesMap = { ...replies };
             await Promise.all(messages.map(async (message) => {
                 const messageReplies = await getRepliesByMessageId(message._id);
                 repliesMap[message._id] = messageReplies.map(reply => ({
@@ -115,76 +125,34 @@ const MessageManager = () => {
             console.error('Lỗi khi lấy phản hồi:', error);
         }
     };
+
     const handleUserClick = async (user_id) => {
         setSelectedUserId(user_id);
+        setCurrentViewingUserId(user_id);
         try {
             const userMessages = messages.filter(message => message.user_id === user_id);
-            
+
             if (userMessages.length === 0) {
                 console.log('Người dùng chưa gửi tin nhắn nào.');
-                return; // Không có tin nhắn để cập nhật
+                return;
             }
-    
+
             const latestMessage = userMessages.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
-    
+
             if (!latestMessage) {
                 message.error('Không tìm thấy tin nhắn để cập nhật');
                 return;
             }
-    
-            // Cập nhật trạng thái cho tất cả tin nhắn
+
             await updateMessage(latestMessage._id, { status: true });
             fetchUsersAndMessages();
-    
-            // Gửi phản hồi tự động chỉ nếu đây là tin nhắn đầu tiên
-            if (userMessages.length === 1 && !repliedUsers.has(latestMessage._id)) {
-                await sendAutomaticReply(user_id);
-                setRepliedUsers(prev => new Set(prev).add(latestMessage._id)); // Đánh dấu tin nhắn đã được phản hồi
-            }
+
         } catch (error) {
             message.error('Không thể cập nhật trạng thái tin nhắn');
             console.error('Lỗi khi cập nhật trạng thái tin nhắn:', error);
         }
     };
-    const sendAutomaticReply = async (user_id) => {
-        const content = "Chào bạn, chúng tôi có thể giúp gì cho bạn?";
-        const userMessages = messages.filter(message => message.user_id === user_id);
-    
-        // Chỉ gửi phản hồi tự động cho tin nhắn đầu tiên
-        if (userMessages.length > 1) {
-            console.log('Người dùng đã gửi nhiều tin nhắn, không gửi phản hồi tự động.');
-            return; // Không gửi phản hồi nếu không phải là tin nhắn đầu tiên
-        }
-    
-        const latestMessage = userMessages[0]; // Lấy tin nhắn đầu tiên
-    
-        if (!latestMessage) {
-            message.error('Không tìm thấy tin nhắn để phản hồi');
-            return;
-        }
-    
-        // Kiểm tra xem phản hồi tự động đã được gửi chưa
-        const existingReplies = replies[latestMessage._id] || [];
-        const hasSentAutomaticReply = existingReplies.some(reply => reply.content === content);
-    
-        if (hasSentAutomaticReply) {
-            console.log('Đã gửi phản hồi tự động trước đó, không gửi lại.');
-            return; // Không gửi lại phản hồi
-        }
-    
-        try {
-            const formData = new FormData();
-            formData.append('content', content);
-            formData.append('user_id', user_id);
-            formData.append('message_id', latestMessage._id);
-    
-            await createReply(formData);
-            message.success('Phản hồi tự động đã được gửi');
-        } catch (error) {
-            message.error('Không thể gửi phản hồi tự động');
-            console.error('Lỗi khi gửi phản hồi tự động:', error);
-        }
-    };
+
     const handleReplySubmit = async () => {
         if ((!newReply.trim() && !newReplyImage) || !selectedUserId) {
             message.error('Vui lòng đảm bảo tất cả các trường bắt buộc đã được điền');
@@ -241,6 +209,15 @@ const MessageManager = () => {
         user.full_name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    useEffect(() => {
+        if (messageContainerRef.current) {
+            messageContainerRef.current.scrollTo({
+                top: messageContainerRef.current.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+    }, [messages, replies]);
+
     return (
         <div style={{ padding: '20px', backgroundColor: '#f5f5f5', minHeight: '100vh' }}>
             <h2 style={{ textAlign: 'center', color: '#333', marginBottom: '20px' }}>Quản lý Tin nhắn</h2>
@@ -253,7 +230,7 @@ const MessageManager = () => {
                         prefix={<SearchOutlined />}
                         style={{ marginBottom: '20px', width: '100%', borderRadius: '5px', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)' }}
                     />
-                    {loadingUsers ? (
+                    {loadingUsers && isFirstLoad ? (
                         <p style={{ textAlign: 'center', color: '#888' }}>Đang tải người dùng...</p>
                     ) : (
                         <List
@@ -275,7 +252,12 @@ const MessageManager = () => {
                                 >
                                     <List.Item.Meta
                                         avatar={<Avatar src={user.avatar} />}
-                                        title={<span style={{ color: '#1890ff', fontWeight: '500' }}>{user.full_name}</span>}
+                                        title={
+                                            <div>
+                                                <span style={{ color: '#1890ff', fontWeight: '500' }}>{user.full_name}</span>
+                                                <div style={{ color: '#888', fontSize: '12px' }}>{user.username}</div>
+                                            </div>
+                                        }
                                     />
                                 </List.Item>
                             )}
@@ -289,7 +271,7 @@ const MessageManager = () => {
                             <h3 style={{ textAlign: 'center', color: '#333', marginBottom: '20px' }}>
                                 Tin nhắn từ {users.find(user => user._id === selectedUserId)?.full_name || 'Người dùng không xác định'}
                             </h3>
-                            <div style={{
+                            <div ref={messageContainerRef} style={{
                                 height: '380px',
                                 overflowY: 'auto',
                                 border: '1px solid #ddd',
@@ -298,7 +280,7 @@ const MessageManager = () => {
                                 marginBottom: '10px',
                                 background: '#fafafa'
                             }}>
-                                {loadingMessages ? (
+                                {loadingMessages && isFirstLoad ? (
                                     <p style={{ textAlign: 'center', color: '#888' }}>Đang tải tin nhắn...</p>
                                 ) : (
                                     messages
@@ -345,7 +327,7 @@ const MessageManager = () => {
                                                                 marginBottom: '10px'
                                                             }}>
                                                                 <strong style={{ color: '#333' }}>Cửa hàng StyleLife:</strong>
-                                                                <p style={{ margin: '5px 0', color: reply.isRecalled ? '#d32f2f' : '#555' }}>{reply.isRecalled ? 'Phản hồi này đã được thu hồi' : reply.content}</p>
+                                                                <p style={{ margin: '5px 0', color: reply.isRecalled ? '#d32f2d' : '#555' }}>{reply.isRecalled ? 'Phản hồi này đã được thu hồi' : reply.content}</p>
                                                                 {reply.img && (
                                                                     <img
                                                                         src={reply.img}

@@ -33,3 +33,13 @@ export const pushNotification = async (notifiData) => {
         throw error;
     }
 };
+export const getAllNotifications = async () => {
+    try {
+        const response = await axiosInstance.get('/getAllNotifi');
+        console.log('Fetched notifications successfully:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching notifications:', error.response ? error.response.data : error.message);
+        throw error;
+    }
+};

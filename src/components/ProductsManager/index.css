@@ -1,0 +1,93 @@
+/* Tổng thể phần tử bao bọc */
+.variant-container {
+    display: flex;                /* Đặt layout dạng flex */
+    flex-direction: row;          /* Căn hàng ngang */
+    flex-wrap: wrap;              /* Xuống dòng khi không đủ không gian */
+    gap: 10px;                    /* Khoảng cách giữa các phần tử */
+    align-items: center;          /* Căn giữa theo chiều dọc */
+    padding: 10px;                /* Khoảng cách padding ngoài */
+  }
+  
+  /* Mỗi card của sản phẩm */
+  .variant-card {
+    border: 1px solid #ddd;       /* Viền của card */
+    border-radius: 10px;          /* Bo góc card */
+    width: 25%;                   /* Chiếm 25% chiều rộng */
+    padding: 10px;                /* Khoảng cách padding trong */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Hiệu ứng đổ bóng */
+    margin-bottom: 10px;          /* Khoảng cách phía dưới */
+    transition: transform 0.2s, box-shadow 0.2s; /* Hiệu ứng hover */
+  }
+  
+  /* Hiệu ứng hover cho card */
+  .variant-card:hover {
+    transform: translateY(-5px);  /* Nhấc card lên khi hover */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Tăng bóng khi hover */
+  }
+  
+  /* Hình ảnh của sản phẩm */
+  .variant-image {
+    display: block;
+    margin: 10px auto;            /* Căn giữa ảnh */
+    border-radius: 8px;           /* Bo góc ảnh */
+    border: 1px solid #ddd;       /* Viền ảnh */
+    max-width: 100%;              /* Không vượt quá chiều rộng container */
+    max-height: 120px;            /* Giới hạn chiều cao tối đa */
+    width: auto;                  /* Đảm bảo tỉ lệ gốc */
+    height: auto;                 /* Đảm bảo tỉ lệ gốc */
+    object-fit: contain;          /* Ảnh vừa khung không bị cắt */
+  }
+  
+  /* Tiêu đề và thông tin */
+  .variant-header {
+    display: flex;                /* Dùng flex để căn chỉnh */
+    justify-content: space-between; /* Khoảng cách đều giữa các phần tử */
+    align-items: center;          /* Căn giữa theo chiều dọc */
+    margin-bottom: 10px;          /* Khoảng cách dưới */
+  }
+  
+  /* Màu sắc sản phẩm */
+  .variant-color {
+    font-weight: bold;            /* Đậm chữ */
+    color: #333;                  /* Màu chữ */
+    font-size: 14px;              /* Kích thước chữ */
+  }
+  
+  /* ID sản phẩm */
+  .variant-id {
+    font-size: 12px;              /* Kích thước nhỏ hơn */
+    color: #666;                  /* Màu xám nhạt */
+    margin: 5px 0;                /* Khoảng cách trên dưới */
+  }
+  
+  /* Bảng kích thước và tồn kho */
+  .variant-table {
+    margin-top: 10px;             /* Khoảng cách phía trên bảng */
+    border-collapse: collapse;    /* Gộp viền bảng */
+    width: 100%;                  /* Chiều rộng toàn phần */
+  }
+  
+  .variant-table th,
+  .variant-table td {
+    text-align: center;           /* Căn giữa nội dung */
+    padding: 5px;                 /* Khoảng cách nội dung */
+    border: 1px solid #ddd;       /* Viền ô bảng */
+    font-size: 12px;              /* Kích thước chữ nhỏ */
+  }
+  
+  .variant-table th {
+    background-color: #f5f5f5;    /* Màu nền cho tiêu đề */
+    font-weight: bold;            /* Đậm chữ tiêu đề */
+  }
+  
+  /* Nút xóa */
+  .delete-icon {
+    color: red;                   /* Màu đỏ nổi bật */
+    cursor: pointer;              /* Con trỏ dạng tay khi hover */
+    transition: transform 0.2s;   /* Hiệu ứng hover */
+  }
+  
+  .delete-icon:hover {
+    transform: scale(1.2);        /* Phóng to nút khi hover */
+  }
+  

@@ -200,19 +200,22 @@ const SubcategoryManager = () => {
             formData.append('name', values.name);
     
             if (imgFile) {
+                console.log('Đang gửi file ảnh:', imgFile);
                 formData.append('image', imgFile);
             }
     
             await updateSubcategory(selectedSubcategory._id, formData);
             message.success("Cập nhật danh mục con thành công!");
+    
             setIsModalVisible(false);
-            fetchSubcategories();  // Gọi lại để làm mới dữ liệu
+            fetchSubcategories(); // Gọi lại API để làm mới dữ liệu
         } catch (error) {
             console.error("Có lỗi khi cập nhật:", error);
             message.error("Có lỗi xảy ra khi cập nhật danh mục con: " + error.message);
         }
     };
-
+    
+    
     const handleDelete = async (id) => {
         try {
             await deleteSubcategory(id);
@@ -367,15 +370,18 @@ const SubcategoryManager = () => {
                     </Form.Item>
 
                     <Form.Item name="imgsubcategory" label="Hình ảnh" rules={[{ required: true, message: 'Vui lòng tải lên một hình ảnh!' }]}>
-                        <Upload 
-                            beforeUpload={(file) => {
-                                setImgFile(file);
-                                return false; // Ngăn chặn tự động tải lên
-                            }} 
-                            maxCount={1} // Giới hạn chỉ cho phép 1 hình ảnh
-        >
-                            <Button icon={<UploadOutlined />}></Button>
-                        </Upload>
+                    <Upload
+    beforeUpload={(file) => {
+        setImgFile(file);
+        return false; // Ngăn không upload tự động
+    }}
+    showUploadList={true}
+    listType="picture"
+    maxCount={1}
+>
+    <Button icon={<UploadOutlined />}>Chọn ảnh</Button>
+</Upload>
+
                     </Form.Item>
 
 

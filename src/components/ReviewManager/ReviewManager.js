@@ -235,7 +235,8 @@ const handleUnblockUser = async (userId) => {
       />
 
       <div className="headerPage">
-        <h3 className="titlepage">Quản lý sản phẩm</h3>
+        <h3 className="titlepage">Quản lý đánh giá
+        </h3>
         <p>Tổng: {products.length} sản phẩm</p>
       </div>
 

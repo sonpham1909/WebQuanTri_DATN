@@ -1,13 +1,14 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { addProduct, addVariantToProduct, deleteProduct, deleteVariants, getAllProducts, getProductById, searchProducts, updateProduct } from '../../services/ProductService';
-import { Button, Table, Modal, Input, Form, Upload, message, Spin, Select, InputNumber } from 'antd';
+import { Button, Table, Modal, Input, Form, Upload, message, Spin, Select, InputNumber, Space } from 'antd';
 import './index.css';
 import LoadingCo from '../loading/loading';
 import Icon, { DeleteFilled, DeleteOutlined, SearchOutlined, UploadOutlined } from '@ant-design/icons';
 import FormDel from '../ActionForms/FormDel';
 import debounce from 'lodash/debounce';
-import { CreateVariant, getVariantsByProductId } from '../../services/VariantService';
+import { CreateVariant, getVariantsByProductId, updateVariantQuantity } from '../../services/VariantService';
 import { Option } from 'antd/es/mentions';
+import { deleteVariantss } from '../../services/VariantService';
 
 
 const ProductManager = () => {
@@ -30,6 +31,46 @@ const ProductManager = () => {
   const [idVariant, setIdVariant] = useState('');
   const [idPro, setIdPro] = useState('');
   const [loading, setLoading] = useState(false);
+  const [editingKey, setEditingKey] = useState(null);
+  const [newQuantity, setNewQuantity] = useState(0);
+
+  const handleUpdateClick = (record) => {
+    setEditingKey(record._id);
+    setNewQuantity(record.quantity); // Gán số lượng hiện tại vào Input
+  };
+
+  const handleSaveClick = async(variantId,record) => {
+   
+    
+    // onUpdateSizeQuantity(record._id, newQuantity); // Gọi callback để cập nhật số lượng
+    try {
+      console.log(record);
+      
+      await updateVariantQuantity(variantId,record.size,newQuantity);
+      setVariants((prevVariants) =>
+        prevVariants.map((variant) => {
+          if (variant._id === variantId) {
+            // Tìm và cập nhật `size` trong mảng `sizes`
+            const updatedSizes = variant.sizes.map((sizeObj) =>
+              sizeObj.size === record.size
+                ? { ...sizeObj, quantity: newQuantity }
+                : sizeObj
+            );
+            return { ...variant, sizes: updatedSizes };
+          }
+          return variant;
+        })
+      );
+      message.success('Cập nhật số lượng thành công');
+    setEditingKey(null); // Đóng chế độ chỉnh sửa
+    } catch (error) {
+      message.error('Lỗi khi cập nhật số lượng: ',error)
+    }
+  };
+
+  const handleCancelClick = () => {
+    setEditingKey(null);
+  };
 
 
   // Quản lý biến thể thông qua state riêng lẻ
@@ -405,7 +446,7 @@ const ProductManager = () => {
     try {
       console.log(idVariant);
       
-      await deleteVariants(idVariant);
+      await deleteVariantss(idVariant);
       message.success('Xóa biến thể thành công');
   
       setVariants(prevVariants => prevVariants.filter(variant => variant._id !== idVariant));
@@ -643,11 +684,40 @@ const ProductManager = () => {
         <Table dataSource={variant.sizes} rowKey="_id" size="small">
           <Table.Column title="Size" dataIndex="size" key="size" />
           <Table.Column title="Số lượng" dataIndex="quantity" key="quantity" />
-        </Table>
+          <Table.Column
+        title="Cập nhật số lượng"
+        key="update"
+        render={(text, record) => {
+          if (editingKey === record._id) {
+            return (
+              <Space>
+                <InputNumber
+                  min={0}
+                  value={newQuantity}
+                  onChange={(value) => setNewQuantity(value)}
+                />
+                <Button type="primary" onClick={() => handleSaveClick(variant._id,record)}>
+                  Lưu
+                </Button>
+                <Button onClick={handleCancelClick}>Hủy</Button>
+              </Space>
+            );
+          }
+
+          return (
+            <Button type="link" onClick={() => handleUpdateClick(record)}>
+              Cập nhật
+            </Button>
+          );
+        }}
+      />
+    </Table>
+       
       </div>
     </div>
   ))}
 </div>
+
 
 
     {/* Phần form thêm biến thể */}
@@ -728,8 +798,9 @@ const ProductManager = () => {
   </div>
 </Modal>
 
-      {IsModalRemove && <FormDel isVisible={IsModalRemove} onclickCan={handleOncancelRemove} onclickDel={handleRemoveProduct} />}
+     
       {IsModalRemoveVariants && <FormDel isVisible={IsModalRemoveVariants} onclickCan={handleOncancelRemoveVariants} onclickDel={handleRemoveVariants} />}
+      {IsModalRemove && <FormDel isVisible={IsModalRemove} onclickCan={handleOncancelRemove} onclickDel={handleRemoveProduct} />}
     </div>
   );
 };

@@ -84,15 +84,23 @@ export const deleteProduct = async (productId) => {
     }
 };
 
+// Trong hàm deleteVariants
 export const deleteVariants = async (variantId, productId) => {
+    console.log('Variant ID:', variantId); // Log variantId
+console.log('Product ID:', productId); // Log productId
+
     try {
-        const response = await axiosInstance.delete(`/${productId}/variants/${variantId}`); // gửi yêu cầu delete
+        const url = `${productId}/variants/${variantId}`;
+        console.log('URL DELETE:', url); // Kiểm tra URL
+        const response = await axiosInstance.delete(url); // Đảm bảo URL này có variantId
         return response.data;
     } catch (error) {
         console.error('Error while removing variants:', error);
         throw error;
     }
 };
+
+
 
 export const searchProducts = async (searchTerm) => { // Đổi tên hàm
     try {

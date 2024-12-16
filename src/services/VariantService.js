@@ -46,7 +46,17 @@ export const CreateVariant = async (variantData) =>{
 
 export const deleteVariantss = async (variantID) =>{
     try {
-        const response = await axiosInstance.delete('/deleteVariant',variantID);
+        const response = await axiosInstance.post('/deleteVariant',{variantId:variantID});
+        return response.data;
+    } catch (error) {
+        console.error("Error create variants:", error.response.data);
+        throw error;
+    }
+}
+
+export const updateVariantQuantity = async (variantID,size, quantity) =>{
+    try {
+        const response = await axiosInstance.put(`/${variantID}/update-quantity`,{size,quantity});
         return response.data;
     } catch (error) {
         console.error("Error create variants:", error.response.data);

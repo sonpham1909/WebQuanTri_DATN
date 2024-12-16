@@ -1,6 +1,7 @@
 
 .container{
     padding: 20px;
+    flex: content;
 }
 .title{
     text-align: center;

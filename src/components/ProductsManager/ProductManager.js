@@ -394,13 +394,20 @@ const ProductManager = () => {
 
   }
 
+
   const handleRemoveVariants = async (idVariant) => {
+    const confirmDelete = window.confirm("Bạn có chắc chắn muốn xóa biến thể này?");
+    
+    if (!confirmDelete) {
+      return; // Nếu người dùng không xác nhận, thoát hàm
+    }
+  
     try {
       console.log(idVariant);
       
       await deleteVariants(idVariant);
       message.success('Xóa biến thể thành công');
-
+  
       setVariants(prevVariants => prevVariants.filter(variant => variant._id !== idVariant));
       setIdVariant('');
       seTIsModalRemoveVariants(false);
@@ -408,11 +415,7 @@ const ProductManager = () => {
       console.error('Error removing variants:', error);
       alert('Xóa biến thể sản phẩm thất bại');
     }
-
-
-  }
-
-
+  };
 
 
   //Render UI UX

@@ -69,9 +69,9 @@ const OrderManager = () => {
       case 'shipping':
         statusChange = 'delivered';
         break;
-        case 'waiting_cancel':
-          statusChange = 'canceled'; // Chuyển trực tiếp sang 'canceled'
-          break;
+      case 'waiting_cancel':
+        statusChange = 'canceled'; // Chuyển trực tiếp sang 'canceled'
+        break;
       default:
         console.log('Không thấy status');
         return;
@@ -112,7 +112,7 @@ const OrderManager = () => {
   };
 
   const handleOnCancelCreate = () => {
-    setIsVisitModalCreate(false); 
+    setIsVisitModalCreate(false);
   };
 
   // New function to handle order cancellation
@@ -120,38 +120,38 @@ const OrderManager = () => {
     setIsCancelReasonModalVisible(true); // Open modal for cancellation reason input
   };
 
- 
+
   const closeCancelReasonModal = () => {
     setIsCancelReasonModalVisible(false);
     setCancelReason(''); // Reset reason
   };
   const handleConfirmCancelOrder = async () => {
     if (!currentOrderId) {
-        message.error('Không có ID đơn hàng');
-        return;
+      message.error('Không có ID đơn hàng');
+      return;
     }
 
     const reason = String(cancelReason).trim(); // Chuyển lý do thành chuỗi và loại bỏ khoảng trắng
     console.log("Lý do hủy đơn hàng:", reason); // Log lý do hủy
 
     if (!reason) {
-        message.error('Vui lòng nhập lý do huỷ đơn hàng');
-        return;
+      message.error('Vui lòng nhập lý do huỷ đơn hàng');
+      return;
     }
 
     try {
-        const response = await cancelOrder(currentOrderId, reason); // Gọi hàm cancelOrder
-        console.log("Response từ cancelOrder:", response); // Log phản hồi
-        message.success('Đơn hàng đã được huỷ thành công');
-        await fetchOrder(); // Cập nhật danh sách đơn hàng
-        closeOrderItemsModal(); // Đóng modal nếu cần
-        closeCancelReasonModal(); // Đóng modal lý do hủy
+      const response = await cancelOrder(currentOrderId, reason); // Gọi hàm cancelOrder
+      console.log("Response từ cancelOrder:", response); // Log phản hồi
+      message.success('Đơn hàng đã được huỷ thành công');
+      await fetchOrder(); // Cập nhật danh sách đơn hàng
+      closeOrderItemsModal(); // Đóng modal nếu cần
+      closeCancelReasonModal(); // Đóng modal lý do hủy
     } catch (error) {
-        console.error("Lỗi khi huỷ đơn hàng:", error);
-        const errorMessage = error.response?.data?.error || 'Huỷ đơn hàng không thành công';
-        message.error(errorMessage);
+      console.error("Lỗi khi huỷ đơn hàng:", error);
+      const errorMessage = error.response?.data?.error || 'Huỷ đơn hàng không thành công';
+      message.error(errorMessage);
     }
-};
+  };
   const statusList = [
     { label: 'pending', color: 'blue' },
     { label: 'ready_for_shipment', color: 'orange' },
@@ -189,6 +189,29 @@ const OrderManager = () => {
       render: (price) => `${price.toLocaleString('vi-VN')} VND`,
     },
     {
+      title: 'Trạng thái thanh toán',
+      dataIndex: 'payment_status',
+      key: 'payment_status',
+      render: (payment_status) => (
+        <p>
+          {payment_status === 'pending'
+            ? 'Đang chờ xử lý'
+            : payment_status === 'paid'
+            ? 'Đã thanh toán'
+            : payment_status === 'unpaid'
+            ? <>
+                Thanh toán khi <br /> nhận hàng
+              </>
+            : payment_status === 'failed'
+            ? 'Thanh toán thất bại'
+            : payment_status === 'cancelled'
+            ? 'Thanh toán bị từ chối'
+            : 'Không xác định'}
+        </p>
+      )
+    },
+    
+    {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
@@ -219,14 +242,14 @@ const OrderManager = () => {
     {
       title: 'Xác nhận',
       render: (text, record) => (
-          <Button
-              onClick={() => handleClickOrderChange(record._id)}
-              disabled={record.status === 'canceled' || record.status === 'delivered'}
-          >
-              Xác nhận
-          </Button>
+        <Button
+          onClick={() => handleClickOrderChange(record._id)}
+          disabled={record.status === 'canceled' || record.status === 'delivered'}
+        >
+          Xác nhận
+        </Button>
       )
-  },
+    },
     {
       title: 'Chi tiết',
       render: (text, record) => (

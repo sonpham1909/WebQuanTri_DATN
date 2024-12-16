@@ -65,8 +65,7 @@ const ProductManager = () => {
         color_code: values.color_code,
         sizes: sizes, // Đảm bảo đây là mảng đối tượng
         image: image // Tệp ảnh
-      };
-      console.log(Array.isArray(variantData.sizes)); // Kiểm tra xem sizes có phải là mảng không
+      };console.log(Array.isArray(variantData.sizes)); // Kiểm tra xem sizes có phải là mảng không
 
 
       console.log(variantData);
@@ -170,8 +169,7 @@ const ProductManager = () => {
 
       // Log biến thể ngay sau khi set
 
-    } catch (error) {
-      console.error('Failed to fetch product:', error);
+    } catch (error) {console.error('Failed to fetch product:', error);
     }
   };
 
@@ -273,9 +271,7 @@ const ProductManager = () => {
       // Gửi danh sách hình ảnh muốn xóa
       if (ImageToDel && ImageToDel.length > 0) {
         formData.append('imagesToDelete', JSON.stringify(ImageToDel)); // Gửi danh sách hình ảnh cần xóa
-      }
-
-      await updateProduct(selectedProductId, formData);
+      }await updateProduct(selectedProductId, formData);
       message.success('Cập nhật hình ảnh thành công!');
       setImageToDel([]);
       fetchProducts();
@@ -398,11 +394,20 @@ const ProductManager = () => {
 
   }
 
-  const handleRemoveVariants = async () => {
-    try {
-      await deleteVariants(idVariant, selectedProductId);
-      message.success('Xóa biến thể thành công');
 
+  const handleRemoveVariants = async (idVariant) => {
+    const confirmDelete = window.confirm("Bạn có chắc chắn muốn xóa biến thể này?");
+    
+    if (!confirmDelete) {
+      return; // Nếu người dùng không xác nhận, thoát hàm
+    }
+  
+    try {
+      console.log(idVariant);
+      
+      await deleteVariants(idVariant);
+      message.success('Xóa biến thể thành công');
+  
       setVariants(prevVariants => prevVariants.filter(variant => variant._id !== idVariant));
       setIdVariant('');
       seTIsModalRemoveVariants(false);
@@ -410,11 +415,7 @@ const ProductManager = () => {
       console.error('Error removing variants:', error);
       alert('Xóa biến thể sản phẩm thất bại');
     }
-
-
-  }
-
-
+  };
 
 
   //Render UI UX
@@ -490,8 +491,7 @@ const ProductManager = () => {
         title="Cập nhật hình ảnh sản phẩm"
         visible={isModalVisibleUpdateImage}
         onCancel={() => {
-          form.resetFields();
-          setIsModalVisibleUpdateImage(false);
+          form.resetFields();setIsModalVisibleUpdateImage(false);
           setImageToDel([]);
 
         }}
@@ -567,8 +567,7 @@ const ProductManager = () => {
     setFileList([]); // Reset fileList khi đóng modal
   }}
   footer={null}
-  width={'50%'}
->
+  width={'50%'}>
   <div
     style={{
       display: 'flex',
@@ -578,62 +577,78 @@ const ProductManager = () => {
   >
     {/* Hiển thị các biến thể */}
     <div
+  style={{
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '15px',
+  }}
+>
+  {variants.map((variant) => (
+    <div
       style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '15px',
+        border: `1px solid ${variant.color_code || 'green'}`,
+        borderRadius: '10px',
+        padding: '15px',
+        boxSizing: 'border-box',
       }}
+      key={variant._id}
     >
-      {variants.map((variant) => (
-        <div
-          style={{
-            border: `1px solid ${variant.color_code || 'green'}`,
-            borderRadius: '10px',
-            padding: '15px',
-            boxSizing: 'border-box',
-          }}
-          key={variant._id}
-        >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: '15px',
-            }}
-          >
-            <div style={{ flex: 1 }}>
-              <p>
-                <strong>Màu sắc:</strong> {variant.color} {variant.color_code}
-              </p>
-            </div>
-            <div style={{ flex: 1, textAlign: 'center' }}>
-              <img
-                src={variant.image}
-                alt={`Sản phẩm màu ${variant.color}`}
-                width="100"
-                style={{ borderRadius: '10px' }}
-              />
-            </div>
-            <div style={{ flex: 1 }}>
-              <p>
-                <strong>ID sản phẩm:</strong> {variant.product_id}
-              </p>
-            </div>
-          </div>
-
-          <div style={{ marginTop: '10px' }}>
-            <p>
-              <strong>Kích thước và số lượng tồn kho:</strong>
-            </p>
-            <Table dataSource={variant.sizes} rowKey="_id" size="small">
-              <Table.Column title="Size" dataIndex="size" key="size" />
-              <Table.Column title="Số lượng" dataIndex="quantity" key="quantity" />
-            </Table>
-          </div>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: '15px',
+        }}
+      >
+        <div style={{ flex: 1 }}>
+          <p>
+            <strong>Màu sắc:</strong> {variant.color} {variant.color_code}
+          </p>
         </div>
-      ))}
+        <div style={{ flex: 1, textAlign: 'center' }}>
+          <img
+            src={variant.image}
+            alt={`Sản phẩm màu ${variant.color}`}
+            width="100"
+            style={{ borderRadius: '10px' }}
+          />
+        </div>
+        <div style={{ flex: 1 }}>
+          <p>
+            <strong>ID sản phẩm:</strong> {variant.product_id}
+          </p>
+        </div>
+        <div>
+          <button
+            style={{
+              backgroundColor: 'red',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              padding: '5px 10px',
+              cursor: 'pointer',
+            }}
+            onClick={() => handleRemoveVariants(variant._id)}
+          >
+            Xóa
+          </button>
+        </div>
+      </div>
+
+      <div style={{ marginTop: '10px' }}>
+        <p>
+          <strong>Kích thước và số lượng tồn kho:</strong>
+        </p>
+        <Table dataSource={variant.sizes} rowKey="_id" size="small">
+          <Table.Column title="Size" dataIndex="size" key="size" />
+          <Table.Column title="Số lượng" dataIndex="quantity" key="quantity" />
+        </Table>
+      </div>
     </div>
+  ))}
+</div>
+
 
     {/* Phần form thêm biến thể */}
     <Form form={form} onFinish={onFinish} layout="vertical">
@@ -668,8 +683,7 @@ const ProductManager = () => {
                       name={[field.name, 'size']}
                       rules={[{ required: true, message: 'Nhập kích thước' }]}
                     >
-                      <Input placeholder="Size" style={{ width: '50%' }} />
-                    </Form.Item>
+                      <Input placeholder="Size" style={{ width: '50%' }} /></Form.Item>
                     <Form.Item
                       {...field}
                       name={[field.name, 'quantity']}
